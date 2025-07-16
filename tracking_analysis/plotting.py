@@ -1,10 +1,20 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 def plot_trajectory_2d(pos, times, time_markers, out_path):
     fig, ax = plt.subplots()
-    sc = ax.scatter(pos[:,0], pos[:,1], c=times, cmap='rainbow')
-    cbar = fig.colorbar(sc, ax=ax)
+    points = pos[:, :2]
+    segments = np.stack([points[:-1], points[1:]], axis=1)
+    norm = Normalize(times.min(), times.max())
+    lc = LineCollection(segments, cmap='rainbow', norm=norm)
+    lc.set_array(times[:-1])
+    ax.add_collection(lc)
+    ax.autoscale()
+    cbar = fig.colorbar(lc, ax=ax)
     cbar.set_label('Time (s)')
     # Add markers on the trajectory
     for tm in time_markers:
@@ -19,8 +29,13 @@ def plot_trajectory_2d(pos, times, time_markers, out_path):
 def plot_trajectory_3d(pos, times, time_markers, out_path):
     fig = plt.figure()
     ax  = fig.add_subplot(111, projection='3d')
-    sc  = ax.scatter(pos[:,0], pos[:,1], pos[:,2], c=times, cmap='rainbow')
-    cbar = fig.colorbar(sc, ax=ax)
+    segments = np.stack([pos[:-1], pos[1:]], axis=1)
+    norm = Normalize(times.min(), times.max())
+    lc = Line3DCollection(segments, cmap='rainbow', norm=norm)
+    lc.set_array(times[:-1])
+    ax.add_collection(lc)
+    ax.autoscale()
+    cbar = fig.colorbar(lc, ax=ax)
     cbar.set_label('Time (s)')
     for tm in time_markers:
         if 0 <= tm < len(times):
