@@ -1,0 +1,28 @@
+# Path to the input CSV (absolute or relative)
+input_file: "./data/output.csv"
+
+# Frame interval (inclusive). Use null for start/end to cover entire file.
+interval:
+  start_frame: 0
+  end_frame: null
+
+# Extra frame “time markers” (integers) to draw on plots
+time_markers:
+  - 240
+  - 900
+
+# List of IDs (rigid-body base names) to analyze; empty = all
+groups: []
+
+# Kinematics (smoothing) options
+kinematics:
+  smoothing: false
+  smoothing_window: 5
+  smoothing_polyorder: 2
+
+# Output settings
+output:
+  plots: true
+  export_filtered: false
+  export_marker_list: false
+  output_dir: "./results"
