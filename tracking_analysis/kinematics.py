@@ -40,16 +40,14 @@ def compute_angular_speed(quat, times, smoothing=False, window=5, polyorder=2):
     q_next = q[1:]
     q_cur_inv = q_inv[:-1]
 
-    # quaternion multiply: q_rel = q_cur_inv * q_next
-    x1,y1,z1,w1 = q_cur_inv.T
-    x2,y2,z2,w2 = q_next.T
+    # Only the w component of the relative quaternion is needed to compute
+    # the angular displacement. Compute it directly to avoid unnecessary
+    # intermediate arrays.
+    x1, y1, z1, w1 = q_cur_inv.T
+    x2, y2, z2, w2 = q_next.T
+    w_rel = w1*w2 - x1*x2 - y1*y2 - z1*z2
 
-    wr = w1*w2 - x1*x2 - y1*y2 - z1*z2
-    xr = w1*x2 + x1*w2 + y1*z2 - z1*y2
-    yr = w1*y2 - x1*z2 + y1*w2 + z1*x2
-    zr = w1*z2 + x1*y2 - y1*x2 + z1*w2
-
-    angle = 2 * np.arccos(np.clip(wr, -1.0, 1.0))
+    angle = 2 * np.arccos(np.clip(w_rel, -1.0, 1.0))
     dt    = np.diff(times)
     ang_speed = angle / dt
     t_mid = times[:-1] + dt/2

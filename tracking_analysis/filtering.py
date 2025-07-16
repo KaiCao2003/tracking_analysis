@@ -31,11 +31,11 @@ def filter_missing(df, start_frame, end_frame):
             # no Position→X for this entity
             continue
 
-        # nunique() returns a scalar for Series but a Series for DataFrame
-        uniq = x_series.nunique()
-        if isinstance(uniq, pd.Series):
-            uniq = uniq.max()
-        if uniq <= 1:
+        # Robust unique count handling, even if x_series is accidentally a
+        # DataFrame due to unexpected column structure. Flatten the values to a
+        # 1D array, drop NaNs, and measure the number of unique entries.
+        vals = pd.unique(pd.Series(x_series.values.ravel()).dropna())
+        if len(vals) <= 1:
             missing.append(entity)
 
     return missing
