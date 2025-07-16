@@ -37,14 +37,26 @@ def main():
     # Static/missing filtering
     missing = filter_missing(df, start, end)
     if cfg.get('output', 'export_filtered'):
-        os.makedirs(cfg.get('output','output_dir'), exist_ok=True)
-        with open(os.path.join(cfg.get('output','output_dir'),
+        os.makedirs(cfg.get('output', 'output_dir'), exist_ok=True)
+        with open(os.path.join(cfg.get('output', 'output_dir'),
                                'missing.txt'), 'w') as f:
             f.write('\n'.join(missing))
 
     # Build ID→entity groups
     groups      = group_entities(df)
     selected_ids = cfg.get('groups') or list(groups.keys())
+
+    # Drop entities that were deemed missing/static
+    selected_ids = [sid for sid in selected_ids if sid not in missing]
+
+    # Optionally export the marker grouping
+    if cfg.get('output', 'export_marker_list'):
+        os.makedirs(cfg.get('output', 'output_dir'), exist_ok=True)
+        with open(os.path.join(cfg.get('output', 'output_dir'),
+                               'markers.txt'), 'w') as f:
+            for gid, info in groups.items():
+                line = ",".join([gid] + info['markers'])
+                f.write(line + "\n")
 
     # Prepare output directory
     out_dir = cfg.get('output','output_dir')
@@ -89,6 +101,10 @@ def main():
         polyorder    = cfg.get('kinematics','smoothing_polyorder')
         time_markers = cfg.get('time_markers') or []
 
+        # Convert absolute frame markers to relative indices
+        tmarkers = [tm - start for tm in time_markers
+                    if tm >= start and (end == float('inf') or tm <= end)]
+
         # Compute speeds
         speed, t_v   = compute_linear_velocity(pos, times,
                                                smoothing, window, polyorder)
@@ -98,19 +114,19 @@ def main():
         # Plot & save
         if cfg.get('output','plots'):
             plot_trajectory_2d(
-                pos, times, time_markers,
+                pos, times, tmarkers,
                 os.path.join(out_dir, f"{id_}_traj2d.png")
             )
             plot_trajectory_3d(
-                pos, times, time_markers,
+                pos, times, tmarkers,
                 os.path.join(out_dir, f"{id_}_traj3d.png")
             )
             plot_time_series(
-                speed, t_v, 'Linear Speed', time_markers,
+                speed, t_v, 'Linear Speed', tmarkers,
                 os.path.join(out_dir, f"{id_}_speed.png")
             )
             plot_time_series(
-                ang_spd, t_a, 'Angular Speed', time_markers,
+                ang_spd, t_a, 'Angular Speed', tmarkers,
                 os.path.join(out_dir, f"{id_}_angular.png")
             )
 
