@@ -54,14 +54,41 @@ def plot_trajectory_3d(pos, times, time_markers, out_path):
     fig.savefig(out_path)
     plt.close(fig)
 
-def plot_time_series(values, times, ylabel, time_markers, out_path):
+def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=None):
+    """Plot a time series with optional anomaly gaps."""
     fig, ax = plt.subplots()
     ax.plot(times, values)
+
+    # dashed connections across filtered ranges
+    if anomalies:
+        for start, end in anomalies:
+            if start > 0 and end < len(values):
+                ax.plot(
+                    [times[start - 1], times[end]],
+                    [values[start - 1], values[end]],
+                    linestyle="--",
+                    color="tab:orange",
+                )
+
     for tm in time_markers:
         if 0 <= tm < len(times):
-            ax.axvline(x=times[tm], linestyle='--', linewidth=1)
-    ax.set_xlabel('Time (s)')
+            ax.axvline(x=times[tm], linestyle="--", linewidth=1)
+
+    ax.set_xlabel("Time (s)")
     ax.set_ylabel(ylabel)
     ax.set_title(f"{ylabel} vs Time")
+
+    if anomalies:
+        txt = "; ".join(
+            f"{a}-{b-1}" if b - a > 1 else f"{a}" for a, b in anomalies
+        )
+        ax.annotate(
+            f"Filtered frames: {txt}",
+            xy=(0.5, -0.15),
+            xycoords="axes fraction",
+            ha="center",
+            fontsize=8,
+        )
+
     fig.savefig(out_path)
     plt.close(fig)
