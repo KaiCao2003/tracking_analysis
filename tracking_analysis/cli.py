@@ -132,6 +132,7 @@ def main():
             polyorder=polyorder,
             method=method,
         )
+
         ang_spd, t_a = compute_angular_speed(
             quat, times, smoothing, window, polyorder
         )
@@ -201,7 +202,24 @@ def main():
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_angular.svg"),
                 anomalies=ang_ranges,
+            )
 
+        # Export raw speed data when requested
+        if cfg.get('output', 'export_speed'):
+            np.savetxt(
+                os.path.join(out_dir, f"{id_}_speed.csv"),
+                np.column_stack([t_v, speed]),
+                delimiter=",",
+                header="time,speed",
+                comments="",
+            )
+        if cfg.get('output', 'export_angular_speed'):
+            np.savetxt(
+                os.path.join(out_dir, f"{id_}_angular_speed.csv"),
+                np.column_stack([t_a, ang_spd]),
+                delimiter=",",
+                header="time,angular_speed",
+                comments="",
             )
 
         # Export raw speed data when requested
