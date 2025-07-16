@@ -68,6 +68,11 @@ def main():
         # --- extract data for this entity (drops level 0) ---
         ent_df = sub.xs(id_, level=0, axis=1)
 
+        # Skip entities lacking required measurements
+        if ('Position' not in ent_df.columns.get_level_values(1)
+                or 'Rotation' not in ent_df.columns.get_level_values(1)):
+            continue
+
         # --- Position (X,Y,Z) extraction ---
         pos_block = ent_df.xs('Position', level=1, axis=1)
         pos_df    = pos_block.droplevel(0, axis=1)
