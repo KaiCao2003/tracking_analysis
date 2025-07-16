@@ -1,7 +1,7 @@
 # Path to the input CSV (absolute or relative)
 input_file: "./data/output.csv"
 
-# Frame interval (inclusive). Use null for start/end to cover entire file.
+# Frame interval (inclusive). Use null for end to cover entire file.
 interval:
   start_frame: 0
   end_frame: null
