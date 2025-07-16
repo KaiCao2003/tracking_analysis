@@ -1,9 +1,15 @@
 import argparse
 import os
+import numpy as np
+import pandas as pd
 
 from tracking_analysis.config import Config
 from tracking_analysis.reader import load_data
-from tracking_analysis.filtering import filter_missing
+from tracking_analysis.filtering import (
+    filter_missing,
+    filter_anomalies,
+    compute_stats,
+)
 from tracking_analysis.grouping import group_entities
 from tracking_analysis.kinematics import (
     compute_linear_velocity,
@@ -109,37 +115,117 @@ def main():
         smoothing    = cfg.get('kinematics','smoothing')
         window       = cfg.get('kinematics','smoothing_window')
         polyorder    = cfg.get('kinematics','smoothing_polyorder')
+        method       = cfg.get('kinematics','smoothing_method', default='savgol')
         time_markers = cfg.get('time_markers') or []
+        filt_cfg     = cfg.get('filtering') or {}
 
         # Convert absolute frame markers to relative indices
         tmarkers = [tm - start for tm in time_markers
                     if tm >= start and (end == float('inf') or tm <= end)]
 
         # Compute speeds
-        speed, t_v   = compute_linear_velocity(pos, times,
-                                               smoothing, window, polyorder)
-        ang_spd, t_a = compute_angular_speed(quat, times,
-                                             smoothing, window, polyorder)
+        speed, t_v   = compute_linear_velocity(
+            pos,
+            times,
+            smoothing=smoothing,
+            window=window,
+            polyorder=polyorder,
+            method=method,
+        )
+        ang_spd, t_a = compute_angular_speed(
+            quat, times, smoothing, window, polyorder
+        )
+
+        # Optional range filtering
+        if filt_cfg.get('enable'):
+            start_frames = start + 1
+            speed, speed_ranges = filter_anomalies(
+                speed,
+                start_frames,
+                filt_cfg.get('speed_lower'),
+                filt_cfg.get('speed_upper'),
+            )
+            ang_spd, ang_ranges = filter_anomalies(
+                ang_spd,
+                start_frames,
+                filt_cfg.get('angular_speed_lower'),
+                filt_cfg.get('angular_speed_upper'),
+            )
+        else:
+            speed_ranges = []
+            ang_ranges = []
+
+        frames_v = np.arange(start + 1, start + 1 + len(speed))
+        frames_a = np.arange(start + 1, start + 1 + len(ang_spd))
+
+        # Summary statistics
+        stats_v = compute_stats(speed, frames_v, t_v)
+        stats_a = compute_stats(ang_spd, frames_a, t_a)
+
+        with open(os.path.join(out_dir, f"{id_}_speed_stats.txt"), "w") as f:
+            for k, v in stats_v.items():
+                f.write(f"{k}: {v}\n")
+        with open(os.path.join(out_dir, f"{id_}_angular_stats.txt"), "w") as f:
+            for k, v in stats_a.items():
+                f.write(f"{k}: {v}\n")
 
         # Plot & save
-        if cfg.get('output','plots'):
+        if cfg.get('output', 'plot_trajectory_2d'):
             plot_trajectory_2d(
-                pos, times, tmarkers,
-
-              os.path.join(out_dir, f"{id_}_traj2d.svg")
+                pos,
+                times,
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_traj2d.svg"),
             )
+        if cfg.get('output', 'plot_trajectory_3d'):
             plot_trajectory_3d(
-                pos, times, tmarkers,
-                os.path.join(out_dir, f"{id_}_traj3d.svg")
+                pos,
+                times,
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_traj3d.svg"),
             )
+        if cfg.get('output', 'plot_linear_speed'):
             plot_time_series(
-                speed, t_v, 'Linear Speed', tmarkers,
-                os.path.join(out_dir, f"{id_}_speed.svg")
+                speed,
+                t_v,
+                'Linear Speed',
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_speed.svg"),
+                anomalies=speed_ranges,
             )
+        if cfg.get('output', 'plot_angular_speed'):
             plot_time_series(
-                ang_spd, t_a, 'Angular Speed', tmarkers,
-                os.path.join(out_dir, f"{id_}_angular.svg")
+                ang_spd,
+                t_a,
+                'Angular Speed',
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_angular.svg"),
+                anomalies=ang_ranges,
 
+            )
+
+        # Export raw speed data when requested
+        if cfg.get('output', 'export_speed'):
+            df_v = pd.DataFrame({
+                'frame': frames_v,
+                'time': t_v,
+                'speed': speed,
+            })
+            df_v.to_csv(
+                os.path.join(out_dir, f"{id_}_speed.csv"),
+                index=False,
+                float_format="%.8f",
+            )
+        if cfg.get('output', 'export_angular_speed'):
+            df_a = pd.DataFrame({
+                'frame': frames_a,
+                'time': t_a,
+                'angular_speed': ang_spd,
+            })
+            df_a.to_csv(
+                os.path.join(out_dir, f"{id_}_angular_speed.csv"),
+                index=False,
+                float_format="%.8f",
             )
 
 if __name__ == '__main__':
