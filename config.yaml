@@ -34,8 +34,11 @@ output:
   plot_trajectory_3d: true
   plot_linear_speed: true
   plot_angular_speed: true
-  export_filtered: false
-  export_marker_list: false
+  
+  export_filtered: false    
   export_speed: false
+
+  export_marker_list: false
   export_angular_speed: false
+  
   output_dir: "./results"
