@@ -20,25 +20,14 @@ kinematics:
   smoothing_polyorder: 2
   smoothing_method: savgol
 
-# Filtering thresholds for speed values
-filtering:
-  enable: false
-  speed_lower: null
-  speed_upper: null
-  angular_speed_lower: null
-  angular_speed_upper: null
-
 # Output settings
 output:
-  plot_trajectory_2d: true
-  plot_trajectory_3d: true
+  plot_trajectory_2d: false
+  plot_trajectory_3d: false
   plot_linear_speed: true
   plot_angular_speed: true
-  
-  export_filtered: false    
-  export_speed: false
-
+  export_filtered: false
   export_marker_list: false
+  export_speed: false
   export_angular_speed: false
-  
   output_dir: "./results"
