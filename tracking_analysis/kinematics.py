@@ -8,19 +8,67 @@ def _smooth(data, window, polyorder):
     wl = window if window % 2 == 1 else window + 1
     return savgol_filter(data, wl, polyorder, axis=0)
 
-def compute_linear_velocity(pos, times, smoothing=False, window=5, polyorder=2):
-    """
-    Compute linear speed from positions.
-    Returns (speed_array, time_midpoints).
-    """
-    if smoothing:
-        pos = _smooth(pos, window, polyorder)
+def _window_speed(pos, times, window):
+    """Compute speed using the custom window-based averaging method."""
+    if window % 2 != 0:
+        raise ValueError("window must be even for windowed smoothing")
+    half = window // 2
+    n = len(times)
+    speeds = []
+    t_mid = []
+    for start in range(0, n - window + 1):
+        mid = start + half
+        end = start + window
+        dt1 = times[start + half - 1] - times[start]
+        dt2 = times[end - 1] - times[mid]
+        if dt1 == 0 or dt2 == 0:
+            speeds.append(np.nan)
+        else:
+            d1 = np.linalg.norm(pos[start + half - 1] - pos[start]) / dt1
+            d2 = np.linalg.norm(pos[end - 1] - pos[mid]) / dt2
+            speeds.append((d1 + d2) / 2)
+        t_mid.append((times[start + half - 1] + times[mid]) / 2)
+    return np.array(speeds), np.array(t_mid)
 
-    dt   = np.diff(times)
+
+def compute_linear_velocity(
+    pos,
+    times,
+    smoothing=False,
+    window=5,
+    polyorder=2,
+    method="savgol",
+):
+    """Compute linear speed from positions.
+
+    Parameters
+    ----------
+    pos : ndarray
+        Array of positions ``(N,3)``.
+    times : ndarray
+        Time values corresponding to each position.
+    smoothing : bool, optional
+        Whether to smooth the position data before differentiating.
+    window : int, optional
+        Smoothing window size.
+    polyorder : int, optional
+        Polynomial order for Savitzky-Golay filtering.
+    method : {'savgol', 'window'}, optional
+        Smoothing method. ``'savgol'`` applies a Savitzky-Golay filter to the
+        positions. ``'window'`` uses the custom averaging method described in
+        the docs.
+    """
+
+    if smoothing and method == "savgol":
+        pos = _smooth(pos, window, polyorder)
+    elif smoothing and method == "window":
+        return _window_speed(pos, times, window)
+
+    dt = np.diff(times)
     dpos = np.diff(pos, axis=0)
-    vel  = dpos / dt[:, None]
+    vel = dpos / dt[:, None]
     speed = np.linalg.norm(vel, axis=1)
-    t_mid = times[:-1] + dt/2
+    t_mid = times[:-1] + dt / 2
     return speed, t_mid
 
 def compute_angular_speed(quat, times, smoothing=False, window=5, polyorder=2):
