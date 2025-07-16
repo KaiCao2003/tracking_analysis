@@ -12,7 +12,7 @@ time_markers:
   - 900
 
 # List of IDs (rigid-body base names) to analyze; empty = all
-groups: []
+groups: [H1]
 
 # Kinematics (smoothing) options
 kinematics:
