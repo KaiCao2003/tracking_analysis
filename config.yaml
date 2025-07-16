@@ -22,6 +22,6 @@ kinematics:
 # Output settings
 output:
   plots: true
-  export_filtered: false
-  export_marker_list: false
+  export_filtered: true
+  export_marker_list: true
   output_dir: "./results"
