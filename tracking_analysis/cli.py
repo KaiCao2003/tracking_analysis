@@ -1,5 +1,6 @@
 import argparse
 import os
+import numpy as np
 
 from tracking_analysis.config import Config
 from tracking_analysis.reader import load_data
@@ -109,6 +110,7 @@ def main():
         smoothing    = cfg.get('kinematics','smoothing')
         window       = cfg.get('kinematics','smoothing_window')
         polyorder    = cfg.get('kinematics','smoothing_polyorder')
+        method       = cfg.get('kinematics','smoothing_method', default='savgol')
         time_markers = cfg.get('time_markers') or []
 
         # Convert absolute frame markers to relative indices
@@ -116,30 +118,66 @@ def main():
                     if tm >= start and (end == float('inf') or tm <= end)]
 
         # Compute speeds
-        speed, t_v   = compute_linear_velocity(pos, times,
-                                               smoothing, window, polyorder)
+        speed, t_v   = compute_linear_velocity(
+            pos,
+            times,
+            smoothing=smoothing,
+            window=window,
+            polyorder=polyorder,
+            method=method,
+        )
         ang_spd, t_a = compute_angular_speed(quat, times,
                                              smoothing, window, polyorder)
 
         # Plot & save
-        if cfg.get('output','plots'):
+        if cfg.get('output', 'plot_trajectory_2d'):
             plot_trajectory_2d(
-                pos, times, tmarkers,
-
-              os.path.join(out_dir, f"{id_}_traj2d.svg")
+                pos,
+                times,
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_traj2d.svg"),
             )
+        if cfg.get('output', 'plot_trajectory_3d'):
             plot_trajectory_3d(
-                pos, times, tmarkers,
-                os.path.join(out_dir, f"{id_}_traj3d.svg")
+                pos,
+                times,
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_traj3d.svg"),
             )
+        if cfg.get('output', 'plot_linear_speed'):
             plot_time_series(
-                speed, t_v, 'Linear Speed', tmarkers,
-                os.path.join(out_dir, f"{id_}_speed.svg")
+                speed,
+                t_v,
+                'Linear Speed',
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_speed.svg"),
             )
+        if cfg.get('output', 'plot_angular_speed'):
             plot_time_series(
-                ang_spd, t_a, 'Angular Speed', tmarkers,
-                os.path.join(out_dir, f"{id_}_angular.svg")
+                ang_spd,
+                t_a,
+                'Angular Speed',
+                tmarkers,
+                os.path.join(out_dir, f"{id_}_angular.svg"),
 
+            )
+
+        # Export raw speed data when requested
+        if cfg.get('output', 'export_speed'):
+            np.savetxt(
+                os.path.join(out_dir, f"{id_}_speed.csv"),
+                np.column_stack([t_v, speed]),
+                delimiter=",",
+                header="time,speed",
+                comments="",
+            )
+        if cfg.get('output', 'export_angular_speed'):
+            np.savetxt(
+                os.path.join(out_dir, f"{id_}_angular_speed.csv"),
+                np.column_stack([t_a, ang_spd]),
+                delimiter=",",
+                header="time,angular_speed",
+                comments="",
             )
 
 if __name__ == '__main__':
