@@ -125,7 +125,8 @@ def main():
         if cfg.get('output','plots'):
             plot_trajectory_2d(
                 pos, times, tmarkers,
-                os.path.join(out_dir, f"{id_}_traj2d.svg")
+
+              os.path.join(out_dir, f"{id_}_traj2d.svg")
             )
             plot_trajectory_3d(
                 pos, times, tmarkers,
@@ -138,6 +139,7 @@ def main():
             plot_time_series(
                 ang_spd, t_a, 'Angular Speed', tmarkers,
                 os.path.join(out_dir, f"{id_}_angular.svg")
+
             )
 
 if __name__ == '__main__':
