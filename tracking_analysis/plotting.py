@@ -35,8 +35,8 @@ def plot_trajectory_3d(pos, times, time_markers, out_path):
     norm = Normalize(times.min(), times.max())
     lc = Line3DCollection(segments, cmap='rainbow', norm=norm)
     lc.set_array(times[:-1])
-    ax.add_collection(lc)
-    ax.autoscale()
+    ax.add_collection3d(lc)
+    ax.auto_scale_xyz(pos[:,0], pos[:,1], pos[:,2])
     if hasattr(ax, 'set_box_aspect'):
         ax.set_box_aspect((1, 1, 1))
     cbar = fig.colorbar(lc, ax=ax)
