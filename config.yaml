@@ -35,6 +35,9 @@ output:
   plot_linear_speed: true
   plot_angular_speed: true
 
+  export_speed_stats: true
+  export_angular_stats: true
+
   export_speed: false
 
   export_filtered: false

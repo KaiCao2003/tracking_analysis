@@ -8,6 +8,7 @@ from tracking_analysis.reader import load_data
 from tracking_analysis.filtering import (
     filter_missing,
     filter_anomalies,
+    apply_ranges,
     compute_stats,
 )
 from tracking_analysis.grouping import group_entities
@@ -140,18 +141,33 @@ def main():
         # Optional range filtering
         if filt_cfg.get('enable'):
             start_frames = start + 1
-            speed, speed_ranges = filter_anomalies(
-                speed,
-                start_frames,
-                filt_cfg.get('speed_lower'),
-                filt_cfg.get('speed_upper'),
-            )
-            ang_spd, ang_ranges = filter_anomalies(
-                ang_spd,
-                start_frames,
-                filt_cfg.get('angular_speed_lower'),
-                filt_cfg.get('angular_speed_upper'),
-            )
+            ranges = []
+            if (
+                filt_cfg.get('speed_lower') is not None
+                or filt_cfg.get('speed_upper') is not None
+            ):
+                speed, ranges = filter_anomalies(
+                    speed,
+                    start_frames,
+                    filt_cfg.get('speed_lower'),
+                    filt_cfg.get('speed_upper'),
+                )
+                ang_spd = apply_ranges(ang_spd, start_frames, ranges)
+            elif (
+                filt_cfg.get('angular_speed_lower') is not None
+                or filt_cfg.get('angular_speed_upper') is not None
+            ):
+                ang_spd, ranges = filter_anomalies(
+                    ang_spd,
+                    start_frames,
+                    filt_cfg.get('angular_speed_lower'),
+                    filt_cfg.get('angular_speed_upper'),
+                )
+                speed = apply_ranges(speed, start_frames, ranges)
+            speed_ranges = [(s - start_frames, e - start_frames) for s, e in ranges]
+            ang_ranges = speed_ranges
+            # apply to position as well
+            pos = apply_ranges(pos, start, [(s, e + 1) for s, e in ranges])
         else:
             speed_ranges = []
             ang_ranges = []
@@ -163,12 +179,14 @@ def main():
         stats_v = compute_stats(speed, frames_v, t_v)
         stats_a = compute_stats(ang_spd, frames_a, t_a)
 
-        with open(os.path.join(out_dir, f"{id_}_speed_stats.txt"), "w") as f:
-            for k, v in stats_v.items():
-                f.write(f"{k}: {v}\n")
-        with open(os.path.join(out_dir, f"{id_}_angular_stats.txt"), "w") as f:
-            for k, v in stats_a.items():
-                f.write(f"{k}: {v}\n")
+        if cfg.get('output', 'export_speed_stats'):
+            with open(os.path.join(out_dir, f"{id_}_speed_stats.txt"), "w") as f:
+                for k, v in stats_v.items():
+                    f.write(f"{k}: {v}\n")
+        if cfg.get('output', 'export_angular_stats'):
+            with open(os.path.join(out_dir, f"{id_}_angular_stats.txt"), "w") as f:
+                for k, v in stats_a.items():
+                    f.write(f"{k}: {v}\n")
 
         # Plot & save
         if cfg.get('output', 'plot_trajectory_2d'):
@@ -177,6 +195,7 @@ def main():
                 times,
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_traj2d.svg"),
+                anomalies=speed_ranges,
             )
         if cfg.get('output', 'plot_trajectory_3d'):
             plot_trajectory_3d(
@@ -184,6 +203,7 @@ def main():
                 times,
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_traj3d.svg"),
+                anomalies=speed_ranges,
             )
         if cfg.get('output', 'plot_linear_speed'):
             plot_time_series(
