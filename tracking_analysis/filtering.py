@@ -1,4 +1,5 @@
 # File: tracking_analysis/filtering.py
+import pandas as pd
 
 def filter_missing(df, start_frame, end_frame):
     """
@@ -30,8 +31,11 @@ def filter_missing(df, start_frame, end_frame):
             # no Position→X for this entity
             continue
 
-        # nunique() on a Series returns an int, safe to compare
-        if x_series.nunique() <= 1:
+        # nunique() returns a scalar for Series but a Series for DataFrame
+        uniq = x_series.nunique()
+        if isinstance(uniq, pd.Series):
+            uniq = uniq.max()
+        if uniq <= 1:
             missing.append(entity)
 
     return missing

@@ -6,10 +6,10 @@ def group_entities(df):
     """
     all_ids = df.columns.get_level_values(0).unique()
 
-    # Keep only those that have a Position channel
+    # Keep only base IDs (no colon) that have a Position channel
     data_ids = [
         e for e in all_ids
-        if any(col[0] == e and col[2] == 'Position' for col in df.columns)
+        if ':' not in e and any(col[0] == e and col[2] == 'Position' for col in df.columns)
     ]
 
     groups = {}
