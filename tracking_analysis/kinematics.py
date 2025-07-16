@@ -71,11 +71,26 @@ def compute_linear_velocity(
     t_mid = times[:-1] + dt / 2
     return speed, t_mid
 
-def compute_angular_speed(quat, times, smoothing=False, window=5, polyorder=2):
+from scipy.spatial.transform import Rotation as R
+from .angles import unwrap_deg
+
+
+def compute_angular_speed(rot, times, smoothing=False, window=5, polyorder=2):
+    """Compute angular speed (rad/s) from orientation data.
+
+    Parameters
+    ----------
+    rot : ndarray
+        ``(N,4)`` quaternions ``(x,y,z,w)`` or ``(N,3)`` Euler angles in degrees
+        interpreted as ``(x,y,z)`` rotations.
+    times : ndarray
+        Time values corresponding to each orientation sample.
     """
-    Compute angular speed (rad/s) from quaternion series.
-    Returns (ang_speed_array, time_midpoints).
-    """
+    if rot.shape[1] == 3:
+        angles = unwrap_deg(rot, axis=0)
+        quat = R.from_euler("xyz", angles, degrees=True).as_quat()
+    else:
+        quat = rot
     if smoothing:
         quat = _smooth(quat, window, polyorder)
 
