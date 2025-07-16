@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 def plot_trajectory_2d(pos, times, time_markers, out_path):
     fig, ax = plt.subplots()
     points = pos[:, :2]
+    # print(points)
     segments = np.stack([points[:-1], points[1:]], axis=1)
     norm = Normalize(times.min(), times.max())
     lc = LineCollection(segments, cmap='rainbow', norm=norm)
