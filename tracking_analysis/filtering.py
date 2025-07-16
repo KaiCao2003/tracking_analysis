@@ -95,6 +95,34 @@ def filter_anomalies(values, start_frame, low=None, high=None):
     return filtered, ranges
 
 
+def apply_ranges(values, start_frame, ranges):
+    """Apply ``ranges`` of frame indices as ``NaN`` to ``values``.
+
+    Parameters
+    ----------
+    values : array_like
+        Array of numeric values. Modified copy is returned.
+    start_frame : int
+        Frame index corresponding to ``values[0]``.
+    ranges : iterable of tuple
+        ``(start_frame, end_frame)`` pairs as produced by :func:`filter_anomalies`.
+
+    Returns
+    -------
+    ndarray
+        Array with selected ranges replaced by ``NaN``.
+    """
+    arr = np.asarray(values, dtype=float).copy()
+    for a, b in ranges:
+        i = max(0, int(a - start_frame))
+        j = max(0, int(b - start_frame))
+        if arr.ndim == 1:
+            arr[i:j] = np.nan
+        else:
+            arr[i:j, ...] = np.nan
+    return arr
+
+
 def compute_stats(values, frames, times):
     """Compute summary statistics for a time series."""
     vals = np.asarray(values, dtype=float)
@@ -109,6 +137,8 @@ def compute_stats(values, frames, times):
         'sd': float(v.std()),
         'q25': float(np.quantile(v, 0.25)),
         'q75': float(np.quantile(v, 0.75)),
+        'q90': float(np.quantile(v, 0.90)),
+        'q95': float(np.quantile(v, 0.95)),
         'max': float(v.max()),
         'max_frame': int(f[np.argmax(v)]),
         'max_time': float(t[np.argmax(v)]),
