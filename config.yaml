@@ -32,9 +32,9 @@ filtering:
 output:
   plot_trajectory_2d: true
   plot_trajectory_3d: true
-  plot_linear_speed: true
+  plot_linear_speed: false
   plot_angular_speed: true
-  
+
   export_speed: false
 
   export_filtered: false
