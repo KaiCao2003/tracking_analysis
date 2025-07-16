@@ -1,6 +1,5 @@
 # File: tracking_analysis/filtering.py
 import pandas as pd
-import numpy as np
 
 def filter_missing(df, start_frame, end_frame):
     """
@@ -40,80 +39,3 @@ def filter_missing(df, start_frame, end_frame):
             missing.append(entity)
 
     return missing
-
-
-def filter_anomalies(values, start_frame, low=None, high=None):
-    """Replace values outside the [low, high] range with NaN.
-
-    Parameters
-    ----------
-    values : array_like
-        Numeric data to filter.
-    start_frame : int
-        Frame index corresponding to ``values[0]``.
-    low : float, optional
-        Values ``<= low`` are removed when specified.
-    high : float, optional
-        Values ``>= high`` are removed when specified.
-
-    Returns
-    -------
-    filtered : ndarray
-        Array with out-of-range entries replaced by ``NaN``.
-    ranges : list of tuple
-        List of ``(start_frame, end_frame)`` ranges for removed sections.
-    """
-    arr = np.asarray(values, dtype=float)
-    filtered = arr.copy()
-    ranges = []
-    i = 0
-    n = len(arr)
-    while i < n:
-        cond = False
-        if low is not None and arr[i] <= low:
-            cond = True
-        if high is not None and arr[i] >= high:
-            cond = True
-        if not cond:
-            i += 1
-            continue
-
-        j = i
-        while j < n:
-            violate = False
-            if low is not None and arr[j] <= low:
-                violate = True
-            if high is not None and arr[j] >= high:
-                violate = True
-            if not violate:
-                break
-            filtered[j] = np.nan
-            j += 1
-        ranges.append((int(start_frame + i), int(start_frame + j)))
-        i = j
-
-    return filtered, ranges
-
-
-def compute_stats(values, frames, times):
-    """Compute summary statistics for a time series."""
-    vals = np.asarray(values, dtype=float)
-    mask = np.isfinite(vals)
-    if not np.any(mask):
-        return {}
-    v = vals[mask]
-    f = np.asarray(frames)[mask]
-    t = np.asarray(times)[mask]
-    stats = {
-        'mean': float(v.mean()),
-        'sd': float(v.std()),
-        'q25': float(np.quantile(v, 0.25)),
-        'q75': float(np.quantile(v, 0.75)),
-        'max': float(v.max()),
-        'max_frame': int(f[np.argmax(v)]),
-        'max_time': float(t[np.argmax(v)]),
-        'min': float(v.min()),
-        'min_frame': int(f[np.argmin(v)]),
-        'min_time': float(t[np.argmin(v)]),
-    }
-    return stats
