@@ -18,6 +18,7 @@ kinematics:
   smoothing: false
   smoothing_window: 5
   smoothing_polyorder: 2
+  smoothing_method: savgol
 
 # Output settings
 output:

@@ -109,6 +109,7 @@ def main():
         smoothing    = cfg.get('kinematics','smoothing')
         window       = cfg.get('kinematics','smoothing_window')
         polyorder    = cfg.get('kinematics','smoothing_polyorder')
+        method       = cfg.get('kinematics','smoothing_method', default='savgol')
         time_markers = cfg.get('time_markers') or []
 
         # Convert absolute frame markers to relative indices
@@ -116,8 +117,14 @@ def main():
                     if tm >= start and (end == float('inf') or tm <= end)]
 
         # Compute speeds
-        speed, t_v   = compute_linear_velocity(pos, times,
-                                               smoothing, window, polyorder)
+        speed, t_v   = compute_linear_velocity(
+            pos,
+            times,
+            smoothing=smoothing,
+            window=window,
+            polyorder=polyorder,
+            method=method,
+        )
         ang_spd, t_a = compute_angular_speed(quat, times,
                                              smoothing, window, polyorder)
 
