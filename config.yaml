@@ -1,13 +1,13 @@
 # Path to the input CSV (absolute or relative)
 
-#input_file: "./data/output1.csv"
-input_file: "./data/input.csv"
+input_file: "./data/output1.csv"
+#input_file: "./data/input.csv"
 
 
 # Time interval in seconds. Use null for end to cover entire file.
 interval:
   start_time: 0
-  end_time: null
+  end_time: 5
 
 # Extra frame “time markers” (integers) to draw on plots
 # Use null for no markers
@@ -18,7 +18,7 @@ groups: [H1]
 
 # Kinematics (smoothing) options
 kinematics:
-  smoothing: false
+  smoothing: true
   smoothing_window: 5
   smoothing_polyorder: 2
   smoothing_method: savgol
@@ -34,12 +34,12 @@ filtering:
 # Output settings
 output:
   plot_trajectory_2d: true
-  plot_trajectory_3d: false
+  plot_trajectory_3d: true
   plot_linear_speed: true
-  plot_angular_speed: false
+  plot_angular_speed: true
 
   # Plot customization
-  full_size_plots: false
+  full_size_plots: true
   x_limit: null
   y_limit: null
 
@@ -55,6 +55,6 @@ output:
 
 # Preprocess settings
 preprocess:
-  enable: true
+  enable: false
   output_file: "./results/trimmed.csv"
   summary_file: "./results/summary.txt"
