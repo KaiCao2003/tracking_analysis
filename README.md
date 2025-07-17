@@ -17,3 +17,4 @@ This project provides a small pipeline for analyzing motion tracking CSV files. 
 All plots, trimmed files and statistics are written to the directory specified by `output.output_dir` (default `results/`). The trimming step also produces `summary.txt` describing the input CSV.
 
 
+

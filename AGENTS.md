@@ -5,6 +5,7 @@ This repository contains utilities for analyzing tracking CSV files.
 * Place all generated files under the `results/` folder.
 * The preprocessing/trimming step is controlled by the `preprocess` section of the config.
 * The summary file should contain a concise description of the input CSV (frames, duration, etc.).
+
 * Ignore `output1.csv` if it appears – this file is for internal testing only.
 
 
