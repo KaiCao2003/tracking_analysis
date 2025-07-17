@@ -222,10 +222,12 @@ def main():
                 speed = apply_ranges(speed, start_frames, rng_conv)
                 ang_spd = apply_ranges(ang_spd, start_frames, rng_conv)
 
-            pos = apply_ranges(pos, start, [(s, e + 1) for s, e in speed_ranges])
-            pos = apply_ranges(pos, start, [(s, e + 1) for s, e in ang_ranges])
+            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in speed_ranges])
+            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in ang_ranges])
 
-            all_ranges = merge_ranges(speed_ranges + ang_ranges + pos_ranges)
+            speed_pos_ranges = [(s - 1, e) for s, e in speed_ranges]
+            ang_pos_ranges = [(s - 1, e) for s, e in ang_ranges]
+            all_ranges = merge_ranges(speed_pos_ranges + ang_pos_ranges + pos_ranges)
             speed_ranges = [(s - start_frames, e - start_frames) for s, e in speed_ranges]
             ang_ranges = [(s - start_frames, e - start_frames) for s, e in ang_ranges]
             traj_ranges = [(s - start, e - start) for s, e in all_ranges]
