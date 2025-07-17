@@ -1,13 +1,13 @@
 # Path to the input CSV (absolute or relative)
 
 input_file: "./data/output1.csv"
-input_file: "./data/input.csv"
+#input_file: "./data/input.csv"
 
 
 # Time interval in seconds. Use null for end to cover entire file.
 interval:
   start_time: 0
-  end_time: 5
+  end_time: null
 
 # Extra time markers in seconds to draw on plots
 # Use null for no markers
@@ -26,11 +26,13 @@ kinematics:
 # Filtering thresholds for speed values. Either speed of angular speed
 filtering:
   enable: true
-  speed_lower: 0.01
-  speed_upper: 3000
-  angular_speed_lower: null
-  angular_speed_upper: null
-  x_lower: null
+
+  speed_lower: null
+  speed_upper: null
+  angular_speed_lower: 0.001
+  angular_speed_upper: 50
+
+x_lower: null
   x_upper: null
   y_lower: null
   y_upper: null
@@ -61,6 +63,6 @@ output:
 
 # Preprocess settings
 preprocess:
-  enable: true
+  enable: false
   output_file: "./results/trimmed.csv"
   summary_file: "./results/summary.txt"
