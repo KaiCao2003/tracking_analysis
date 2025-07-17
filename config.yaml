@@ -1,10 +1,10 @@
 # Path to the input CSV (absolute or relative)
-input_file: "./data/output1.csv"
+input_file: "./data/output.csv"
 
-# Frame interval (inclusive). Use null for end to cover entire file.
+# Time interval (seconds). Use null for end to cover entire file.
 interval:
-  start_frame: 1000
-  end_frame: 1750
+  start_time: 0.0
+  end_time: null
 
 # Extra frame “time markers” (integers) to draw on plots
 # Use null for no markers
@@ -12,6 +12,12 @@ time_markers: null
 
 # List of IDs (rigid-body base names) to analyze; empty = all
 groups: [H1]
+
+# Preprocessing options
+preprocess:
+  enable: false
+  output_file: "./data/output.csv"
+  summary_file: "./data/summary.txt"
 
 # Kinematics (smoothing) options
 kinematics:
@@ -34,6 +40,10 @@ output:
   plot_trajectory_3d: false
   plot_linear_speed: true
   plot_angular_speed: true
+
+  full_size_plots: false
+  x_limit: null
+  y_limit: null
 
   export_speed_stats: false
   export_angular_stats: false
