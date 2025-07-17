@@ -1,29 +1,39 @@
 import pandas as pd
 
 def preprocess_csv(in_path, out_path, summary_path):
-    """Trim unused header/data lines and save a summary."""
+    """Trim unused header/data lines and write a concise summary."""
     lines_to_remove = {1, 2, 3, 6}
-    with open(in_path, 'r', encoding='utf-8') as fin:
+
+    with open(in_path, "r", encoding="utf-8") as fin:
         lines = fin.readlines()
 
-    # Save removed lines as summary
-    with open(summary_path, 'w', encoding='utf-8') as fout:
-        for i, line in enumerate(lines, start=1):
-            if i in lines_to_remove:
-                fout.write(line)
-
-    with open(out_path, 'w', encoding='utf-8') as fout:
+    with open(out_path, "w", encoding="utf-8") as fout:
         for i, line in enumerate(lines, start=1):
             if i not in lines_to_remove:
                 fout.write(line)
 
-    # Load the trimmed file to compute frequency
-    df, _, time_col = load_data(out_path)
+    # Load the trimmed file and gather basic info
+    df, frame_col, time_col = load_data(out_path)
     times = df[time_col].values
+    frames = df[frame_col].values
     if len(times) > 1:
         freq = 1.0 / float(pd.Series(times).diff().dropna().mean())
-        with open(summary_path, 'a', encoding='utf-8') as fout:
-            fout.write(f"Estimated frequency: {freq:.3f} Hz\n")
+    else:
+        freq = float("nan")
+
+    base_entities = {name.split(":")[0] for name in df.columns.get_level_values(0)}
+
+    summary_lines = [
+        f"Frames: {len(df)}",
+        f"Start time: {times[0]:.3f}s",
+        f"End time: {times[-1]:.3f}s",
+        f"Duration: {times[-1] - times[0]:.3f}s",
+        f"Estimated frequency: {freq:.3f} Hz",
+        "Entities:",
+    ] + [f"- {e}" for e in sorted(base_entities)]
+
+    with open(summary_path, "w", encoding="utf-8") as fout:
+        fout.write("\n".join(summary_lines) + "\n")
 
 def load_data(filepath):
     """
