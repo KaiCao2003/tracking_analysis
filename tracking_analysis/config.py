@@ -7,9 +7,9 @@ class Config:
         with open(path, 'r') as f:
             self._cfg = yaml.safe_load(f)
 
-        # Interpret `null` end_frame as “all frames”
-        if self._cfg['interval'].get('end_frame') is None:
-            self._cfg['interval']['end_frame'] = float('inf')
+        # Interpret `null` end_time as “all data”
+        if self._cfg['interval'].get('end_time') is None:
+            self._cfg['interval']['end_time'] = float('inf')
 
         # Make output_dir absolute
         out = self._cfg['output'].get('output_dir', './results')
