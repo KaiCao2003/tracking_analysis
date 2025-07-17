@@ -1,5 +1,5 @@
 # Path to the input CSV (absolute or relative)
-input_file: "./data/output1.csv"
+input_file: "./data/input.csv"
 
 # Time interval in seconds. Use null for end to cover entire file.
 interval:
@@ -53,5 +53,5 @@ output:
 # Preprocess settings
 preprocess:
   enable: true
-  output_file: "./data/output.csv"
-  summary_file: "./data/summary.txt"
+  output_file: "./results/trimmed.csv"
+  summary_file: "./results/summary.txt"
