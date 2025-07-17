@@ -26,11 +26,13 @@ kinematics:
 # Filtering thresholds for speed values. Either speed of angular speed
 filtering:
   enable: true
+
   speed_lower: null
   speed_upper: null
   angular_speed_lower: 0.001
   angular_speed_upper: 50
-  x_lower: null
+
+x_lower: null
   x_upper: null
   y_lower: null
   y_upper: null
