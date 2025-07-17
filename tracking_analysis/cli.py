@@ -22,6 +22,14 @@ from tracking_analysis.plotting import (
     plot_time_series
 )
 
+
+def ask_yes_no(prompt, default="n"):
+    """Simple yes/no prompt returning True for yes."""
+    resp = input(prompt).strip().lower()
+    if not resp:
+        resp = default
+    return resp.startswith("y")
+
 def main():
     parser = argparse.ArgumentParser(description="Tracking analysis pipeline")
     parser.add_argument(
@@ -36,11 +44,12 @@ def main():
 
     # Optionally preprocess the CSV
     input_path = cfg.get('input_file')
-    if cfg.get('preprocess', 'enable'):
+    pre_cfg = cfg.get('preprocess') or {}
+    if pre_cfg.get('enable') and ask_yes_no("Trim CSV before analysis? [y/N]: "):
         preprocess_csv(
             input_path,
-            cfg.get('preprocess', 'output_file'),
-            cfg.get('preprocess', 'summary_file'),
+            pre_cfg.get('output_file', 'output.csv'),
+            pre_cfg.get('summary_file', 'summary.txt'),
         )
 
     # Load data + frame/time columns from the original file
