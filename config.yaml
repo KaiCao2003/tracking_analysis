@@ -36,7 +36,7 @@ output:
   plot_trajectory_2d: true
   plot_trajectory_3d: false
   plot_linear_speed: true
-  plot_angular_speed: true
+  plot_angular_speed: false
 
   # Plot customization
   full_size_plots: false
