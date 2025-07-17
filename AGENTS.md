@@ -15,3 +15,6 @@ Can be simply like a bool of whether download the list or whether gen 2d. They c
 3. user can also add "time marker" for request markers on the final plot on that time point. Like user can add time point at 10s when they want to anlyze data from 1s to 15s. thus, in plots generated, add a marker like a line or triangle to indicate it. time marker shoudo within the selacted time range 
 4. the time determined by user should be input as frame in both interval and time marker. the time show in the plot should be time in second or in mm:ss format. 
 5. in the trajectory plot, use rainbow color to indicate the start and end. start is cold color and warm color will be end. one round in one trajectory, aka do NOT change the coor back at the middle of the trajactory but just use rainbow color scale to indicate the time in these plots. add a bar next to it indicating start and end.
+
+
+IGNORE output1.csv if exists. That's a internal testing file shouldn't be uploaded. 

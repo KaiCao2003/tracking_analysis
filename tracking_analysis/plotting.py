@@ -120,6 +120,7 @@ def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=No
                     [values[start - 1], values[end]],
                     linestyle="--",
                     color="tab:orange",
+                    linewidth=1
                 )
 
     for tm in time_markers:
