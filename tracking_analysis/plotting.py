@@ -24,7 +24,7 @@ def _annotate_ranges(ax, ranges, times):
 
 def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None,
                        full_size=False):
-    fig, ax = plt.subplots(figsize=(12, 8) if full_size else None)
+    fig, ax = plt.subplots(figsize=(16, 10) if full_size else None)
     points = pos[:, :2]
     mask = ~np.isnan(points).any(axis=1)
     segments = np.stack([points[:-1], points[1:]], axis=1)
@@ -52,7 +52,7 @@ def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None,
     # Add markers on the trajectory
     for tm in time_markers:
         if 0 <= tm < len(times):
-            ax.scatter(pos[tm,0], pos[tm,1], marker='v', s=60, edgecolor='black')
+            ax.scatter(pos[tm,0], pos[tm,1], marker='v', s=60, edgecolor='black', color='red')
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_title('2D Trajectory')
@@ -62,7 +62,7 @@ def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None,
 
 def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None,
                        full_size=False):
-    fig = plt.figure(figsize=(12, 8) if full_size else None)
+    fig = plt.figure(figsize=(16, 10) if full_size else None)
     ax = fig.add_subplot(111, projection="3d")
     mask = ~np.isnan(pos).any(axis=1)
     segments = np.stack([pos[:-1], pos[1:]], axis=1)
@@ -98,7 +98,8 @@ def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None,
                 pos[tm, 2],
                 marker='v',
                 s=60,
-                edgecolor='black'
+                edgecolor='black',
+                color='red'
             )
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -111,7 +112,7 @@ def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None,
 def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=None,
                      full_size=False, x_limit=None, y_limit=None):
     """Plot a time series with optional anomaly gaps."""
-    fig, ax = plt.subplots(figsize=(12, 8) if full_size else None)
+    fig, ax = plt.subplots(figsize=(16, 10) if full_size else None)
     ax.plot(times, values)
 
     # dashed connections across filtered ranges
@@ -128,7 +129,7 @@ def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=No
 
     for tm in time_markers:
         if 0 <= tm < len(times):
-            ax.axvline(x=times[tm], linestyle="--", linewidth=1)
+            ax.scatter(times[tm], values[tm], marker='v', color='red', zorder=5)
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(ylabel)

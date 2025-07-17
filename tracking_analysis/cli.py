@@ -1,5 +1,6 @@
 import argparse
 import os
+from datetime import datetime
 import numpy as np
 import pandas as pd
 
@@ -36,12 +37,22 @@ def main():
     # Load configuration
     cfg = Config(args.config)
 
+    # Prepare run-specific output directory
+    base_out = cfg.get('output', 'output_dir')
+    out_dir = os.path.join(base_out, datetime.now().strftime('%Y%m%d_%H%M%S'))
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Save the config used for this run
+    with open(args.config, 'r') as f_in, \
+            open(os.path.join(out_dir, 'config_used.txt'), 'w') as f_out:
+        f_out.write(f_in.read())
+
     # Optionally preprocess the CSV
     input_path = cfg.get('input_file')
     pre_cfg = cfg.get('preprocess') or {}
     if pre_cfg.get('enable'):
-        out_file = pre_cfg.get('output_file', 'output.csv')
-        summary_file = pre_cfg.get('summary_file', 'summary.txt')
+        out_file = pre_cfg.get('output_file', os.path.join(out_dir, 'trimmed.csv'))
+        summary_file = pre_cfg.get('summary_file', os.path.join(out_dir, 'summary.txt'))
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         os.makedirs(os.path.dirname(summary_file), exist_ok=True)
         preprocess_csv(
@@ -68,9 +79,7 @@ def main():
     # Static/missing filtering
     missing = filter_missing(df, start, end)
     if cfg.get('output', 'export_filtered'):
-        os.makedirs(cfg.get('output', 'output_dir'), exist_ok=True)
-        with open(os.path.join(cfg.get('output', 'output_dir'),
-                               'missing.txt'), 'w') as f:
+        with open(os.path.join(out_dir, 'missing.txt'), 'w') as f:
             f.write('\n'.join(missing))
 
     # Build ID→entity groups
@@ -87,21 +96,16 @@ def main():
             filtered_df = df.loc[start:, cols]
         else:
             filtered_df = df.loc[start:end, cols]
-        filtered_df.to_csv(os.path.join(
-            cfg.get('output', 'output_dir'), 'filtered.csv'))
+        filtered_df.to_csv(os.path.join(out_dir, 'filtered.csv'))
 
     # Optionally export the marker grouping
     if cfg.get('output', 'export_marker_list'):
-        os.makedirs(cfg.get('output', 'output_dir'), exist_ok=True)
-        with open(os.path.join(cfg.get('output', 'output_dir'),
-                               'markers.txt'), 'w') as f:
+        with open(os.path.join(out_dir, 'markers.txt'), 'w') as f:
             for gid, info in groups.items():
                 line = ",".join([gid] + info['markers'])
                 f.write(line + "\n")
 
-    # Prepare output directory
-    out_dir = cfg.get('output','output_dir')
-    os.makedirs(out_dir, exist_ok=True)
+    # out_dir already prepared above
 
     for id_ in selected_ids:
         if id_ not in groups:
@@ -138,12 +142,15 @@ def main():
         window       = cfg.get('kinematics','smoothing_window')
         polyorder    = cfg.get('kinematics','smoothing_polyorder')
         method       = cfg.get('kinematics','smoothing_method', default='savgol')
-        time_markers = cfg.get('time_markers') or []
+        time_markers = cfg.get('time_markers') or []  # seconds
         filt_cfg     = cfg.get('filtering') or {}
 
-        # Convert absolute frame markers to relative indices
-        tmarkers = [tm - start for tm in time_markers
-                    if tm >= start and (end == float('inf') or tm <= end)]
+        # Convert marker times to relative indices within this slice
+        tmarkers = []
+        for tm in time_markers:
+            idx = int(np.searchsorted(times, tm, side='left'))
+            if 0 <= idx < len(times):
+                tmarkers.append(idx)
 
         # Compute speeds
         speed, t_v   = compute_linear_velocity(
