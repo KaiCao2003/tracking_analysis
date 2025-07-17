@@ -12,8 +12,9 @@ This project provides a small pipeline for analyzing motion tracking CSV files. 
    ```bash
    python -m tracking_analysis.cli --config config.yaml
    ```
-   The script will optionally trim the CSV when `preprocess.enable` is `true`.
+   The script will automatically trim the CSV when `preprocess.enable` is `true`.
 
-All plots and exported data are written to the directory specified by `output.output_dir` (default `results/`).
+All plots, trimmed files and statistics are written to the directory specified by `output.output_dir` (default `results/`). The trimming step also produces `summary.txt` describing the input CSV.
+
 
 
