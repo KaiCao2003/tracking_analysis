@@ -51,6 +51,8 @@ def main():
             pre_cfg.get('output_file', 'output.csv'),
             pre_cfg.get('summary_file', 'summary.txt'),
         )
+        # Continue with the trimmed file
+        input_path = pre_cfg.get('output_file', 'output.csv')
 
     # Load data + frame/time columns from the original file
     df, frame_col, time_col = load_data(input_path)
