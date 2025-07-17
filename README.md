@@ -38,7 +38,7 @@ List of rigid-body base names to analyse. An empty list means all available grou
 Options for smoothing the computed velocities (`smoothing`, `smoothing_window`, `smoothing_polyorder`, `smoothing_method`).
 
 ### `filtering`
-Enable range filtering and define upper/lower thresholds for linear or angular speed.
+Enable range filtering and define upper/lower thresholds for linear speed, angular speed and X/Y/Z coordinates.
 
 ### `output`
 Controls which figures and exports are produced. `full_size_plots` enlarges plots to 16x10 inches. `x_limit` and `y_limit` specify the axis maxima for time-series plots (set to `null` for automatic scaling).
