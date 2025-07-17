@@ -11,6 +11,8 @@ from tracking_analysis.filtering import (
     filter_anomalies,
     apply_ranges,
     compute_stats,
+    filter_position,
+    merge_ranges,
 )
 from tracking_analysis.grouping import group_entities
 from tracking_analysis.kinematics import (
@@ -169,36 +171,70 @@ def main():
         # Optional range filtering
         if filt_cfg.get('enable'):
             start_frames = start + 1
-            ranges = []
+            speed_ranges = []
+            ang_ranges = []
+            pos_ranges = []
+
             if (
                 filt_cfg.get('speed_lower') is not None
                 or filt_cfg.get('speed_upper') is not None
             ):
-                speed, ranges = filter_anomalies(
+                speed, speed_ranges = filter_anomalies(
                     speed,
                     start_frames,
                     filt_cfg.get('speed_lower'),
                     filt_cfg.get('speed_upper'),
                 )
-                ang_spd = apply_ranges(ang_spd, start_frames, ranges)
-            elif (
+
+            if (
                 filt_cfg.get('angular_speed_lower') is not None
                 or filt_cfg.get('angular_speed_upper') is not None
             ):
-                ang_spd, ranges = filter_anomalies(
+                ang_spd, ang_ranges = filter_anomalies(
                     ang_spd,
                     start_frames,
                     filt_cfg.get('angular_speed_lower'),
                     filt_cfg.get('angular_speed_upper'),
                 )
-                speed = apply_ranges(speed, start_frames, ranges)
-            speed_ranges = [(s - start_frames, e - start_frames) for s, e in ranges]
-            ang_ranges = speed_ranges
-            # apply to position as well
-            pos = apply_ranges(pos, start, [(s, e + 1) for s, e in ranges])
+
+            if any(
+                filt_cfg.get(f"{axis}_{b}") is not None
+                for axis in ("x", "y", "z")
+                for b in ("lower", "upper")
+            ):
+                pos, pos_ranges = filter_position(
+                    pos,
+                    start,
+                    filt_cfg.get("x_lower"),
+                    filt_cfg.get("x_upper"),
+                    filt_cfg.get("y_lower"),
+                    filt_cfg.get("y_upper"),
+                    filt_cfg.get("z_lower"),
+                    filt_cfg.get("z_upper"),
+                )
+
+            # cross apply ranges
+            ang_spd = apply_ranges(ang_spd, start_frames, speed_ranges)
+            speed = apply_ranges(speed, start_frames, ang_ranges)
+
+            if pos_ranges:
+                rng_conv = [(max(start_frames, s), e + 1) for s, e in pos_ranges]
+                speed = apply_ranges(speed, start_frames, rng_conv)
+                ang_spd = apply_ranges(ang_spd, start_frames, rng_conv)
+
+            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in speed_ranges])
+            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in ang_ranges])
+
+            speed_pos_ranges = [(s - 1, e) for s, e in speed_ranges]
+            ang_pos_ranges = [(s - 1, e) for s, e in ang_ranges]
+            all_ranges = merge_ranges(speed_pos_ranges + ang_pos_ranges + pos_ranges)
+            speed_ranges = [(s - start_frames, e - start_frames) for s, e in speed_ranges]
+            ang_ranges = [(s - start_frames, e - start_frames) for s, e in ang_ranges]
+            traj_ranges = [(s - start, e - start) for s, e in all_ranges]
         else:
             speed_ranges = []
             ang_ranges = []
+            traj_ranges = []
 
         frames_v = np.arange(start + 1, start + 1 + len(speed))
         frames_a = np.arange(start + 1, start + 1 + len(ang_spd))
@@ -223,7 +259,7 @@ def main():
                 times,
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_traj2d.svg"),
-                anomalies=speed_ranges,
+                anomalies=traj_ranges,
                 full_size=cfg.get('output', 'full_size_plots', default=False),
             )
         if cfg.get('output', 'plot_trajectory_3d'):
@@ -232,7 +268,7 @@ def main():
                 times,
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_traj3d.svg"),
-                anomalies=speed_ranges,
+                anomalies=traj_ranges,
                 full_size=cfg.get('output', 'full_size_plots', default=False),
             )
         if cfg.get('output', 'plot_linear_speed'):

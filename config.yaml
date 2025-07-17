@@ -30,6 +30,12 @@ filtering:
   speed_upper: 3000
   angular_speed_lower: null
   angular_speed_upper: null
+  x_lower: null
+  x_upper: null
+  y_lower: null
+  y_upper: null
+  z_lower: null
+  z_upper: null
 
 # Output settings
 output:

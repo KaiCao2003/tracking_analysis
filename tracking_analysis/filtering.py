@@ -147,3 +147,66 @@ def compute_stats(values, frames, times):
         'min_time': float(t[np.argmin(v)]),
     }
     return stats
+
+
+def filter_position(
+    pos,
+    start_frame,
+    x_lower=None,
+    x_upper=None,
+    y_lower=None,
+    y_upper=None,
+    z_lower=None,
+    z_upper=None,
+):
+    """Filter position array by coordinate thresholds."""
+    arr = np.asarray(pos, dtype=float)
+    mask = np.zeros(len(arr), dtype=bool)
+
+    if x_lower is not None:
+        mask |= arr[:, 0] <= x_lower
+    if x_upper is not None:
+        mask |= arr[:, 0] >= x_upper
+    if arr.shape[1] > 1:
+        if y_lower is not None:
+            mask |= arr[:, 1] <= y_lower
+        if y_upper is not None:
+            mask |= arr[:, 1] >= y_upper
+    if arr.shape[1] > 2:
+        if z_lower is not None:
+            mask |= arr[:, 2] <= z_lower
+        if z_upper is not None:
+            mask |= arr[:, 2] >= z_upper
+
+    filtered = arr.copy()
+    filtered[mask] = np.nan
+
+    ranges = []
+    i = 0
+    n = len(arr)
+    while i < n:
+        if not mask[i]:
+            i += 1
+            continue
+        j = i
+        while j < n and mask[j]:
+            j += 1
+        ranges.append((int(start_frame + i), int(start_frame + j)))
+        i = j
+
+    return filtered, ranges
+
+
+def merge_ranges(ranges):
+    """Merge overlapping ranges."""
+    if not ranges:
+        return []
+    ranges = sorted(ranges)
+    merged = [list(ranges[0])]
+    for a, b in ranges[1:]:
+        m_a, m_b = merged[-1]
+        if a <= m_b:
+            merged[-1][1] = max(m_b, b)
+        else:
+            merged.append([a, b])
+    return [(int(a), int(b)) for a, b in merged]

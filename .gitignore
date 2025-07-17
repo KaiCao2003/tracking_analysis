@@ -1,3 +1,4 @@
 # Ignore analysis results and caches
 results/
+output1.csv
 __pycache__/

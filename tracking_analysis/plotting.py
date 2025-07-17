@@ -6,6 +6,23 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 
+def _draw_dashed_connection(ax, start_pt, end_pt, start_t, end_t, norm, is3d=False, steps=20):
+    """Draw a dashed connection with rainbow gradient."""
+    pts = np.linspace(start_pt, end_pt, steps)
+    times = np.linspace(start_t, end_t, steps)
+    segments = np.stack([pts[:-1], pts[1:]], axis=1)
+    seg_times = times[:-1]
+
+    if is3d:
+        lc = Line3DCollection(segments, cmap="rainbow", norm=norm, linestyles="--")
+        lc.set_array(seg_times)
+        ax.add_collection3d(lc)
+    else:
+        lc = LineCollection(segments, cmap="rainbow", norm=norm, linestyles="--")
+        lc.set_array(seg_times)
+        ax.add_collection(lc)
+
+
 def _annotate_ranges(ax, ranges, times):
     if not ranges:
         return
@@ -43,11 +60,14 @@ def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None,
     if anomalies:
         for start, end in anomalies:
             if start > 0 and end < len(points):
-                ax.plot(
-                    [points[start - 1, 0], points[end, 0]],
-                    [points[start - 1, 1], points[end, 1]],
-                    linestyle="--",
-                    color="tab:orange",
+                _draw_dashed_connection(
+                    ax,
+                    points[start - 1],
+                    points[end],
+                    times[start - 1],
+                    times[end],
+                    norm,
+                    is3d=False,
                 )
     # Add markers on the trajectory
     for tm in time_markers:
@@ -82,12 +102,14 @@ def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None,
     if anomalies:
         for start, end in anomalies:
             if start > 0 and end < len(pos):
-                ax.plot(
-                    [pos[start - 1, 0], pos[end, 0]],
-                    [pos[start - 1, 1], pos[end, 1]],
-                    [pos[start - 1, 2], pos[end, 2]],
-                    linestyle="--",
-                    color="tab:orange",
+                _draw_dashed_connection(
+                    ax,
+                    pos[start - 1],
+                    pos[end],
+                    times[start - 1],
+                    times[end],
+                    norm,
+                    is3d=True,
                 )
 
     for tm in time_markers:
@@ -113,7 +135,7 @@ def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=No
                      full_size=False, x_limit=None, y_limit=None):
     """Plot a time series with optional anomaly gaps."""
     fig, ax = plt.subplots(figsize=(16, 10) if full_size else None)
-    ax.plot(times, values)
+    line, = ax.plot(times, values)
 
     # dashed connections across filtered ranges
     if anomalies:
@@ -123,7 +145,7 @@ def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=No
                     [times[start - 1], times[end]],
                     [values[start - 1], values[end]],
                     linestyle="--",
-                    color="tab:orange",
+                    color=line.get_color(),
                     linewidth=1
                 )
 
