@@ -19,16 +19,10 @@ from tracking_analysis.kinematics import (
 from tracking_analysis.plotting import (
     plot_trajectory_2d,
     plot_trajectory_3d,
-    plot_time_series
+    plot_time_series,
 )
 
 
-def ask_yes_no(prompt, default="n"):
-    """Simple yes/no prompt returning True for yes."""
-    resp = input(prompt).strip().lower()
-    if not resp:
-        resp = default
-    return resp.startswith("y")
 
 def main():
     parser = argparse.ArgumentParser(description="Tracking analysis pipeline")
@@ -45,14 +39,18 @@ def main():
     # Optionally preprocess the CSV
     input_path = cfg.get('input_file')
     pre_cfg = cfg.get('preprocess') or {}
-    if pre_cfg.get('enable') and ask_yes_no("Trim CSV before analysis? [y/N]: "):
+    if pre_cfg.get('enable'):
+        out_file = pre_cfg.get('output_file', 'output.csv')
+        summary_file = pre_cfg.get('summary_file', 'summary.txt')
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        os.makedirs(os.path.dirname(summary_file), exist_ok=True)
         preprocess_csv(
             input_path,
-            pre_cfg.get('output_file', 'output.csv'),
-            pre_cfg.get('summary_file', 'summary.txt'),
+            out_file,
+            summary_file,
         )
         # Continue with the trimmed file
-        input_path = pre_cfg.get('output_file', 'output.csv')
+        input_path = out_file
 
     # Load data + frame/time columns from the original file
     df, frame_col, time_col = load_data(input_path)
@@ -255,23 +253,6 @@ def main():
                 y_limit=cfg.get('output', 'y_limit'),
             )
 
-        # Export raw speed data when requested
-        if cfg.get('output', 'export_speed'):
-            np.savetxt(
-                os.path.join(out_dir, f"{id_}_speed.csv"),
-                np.column_stack([t_v, speed]),
-                delimiter=",",
-                header="time,speed",
-                comments="",
-            )
-        if cfg.get('output', 'export_angular_speed'):
-            np.savetxt(
-                os.path.join(out_dir, f"{id_}_angular_speed.csv"),
-                np.column_stack([t_a, ang_spd]),
-                delimiter=",",
-                header="time,angular_speed",
-                comments="",
-            )
 
         # Export raw speed data when requested
         if cfg.get('output', 'export_speed'):
