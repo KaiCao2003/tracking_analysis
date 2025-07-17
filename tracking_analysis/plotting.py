@@ -72,7 +72,15 @@ def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None,
     # Add markers on the trajectory
     for tm in time_markers:
         if 0 <= tm < len(times):
-            ax.scatter(pos[tm,0], pos[tm,1], marker='v', s=60, edgecolor='black', color='red')
+            ax.scatter(
+                pos[tm, 0],
+                pos[tm, 1],
+                marker="v",
+                s=60,
+                edgecolor="black",
+                color="red",
+                zorder=10,
+            )
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_title('2D Trajectory')
@@ -118,10 +126,11 @@ def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None,
                 pos[tm, 0],
                 pos[tm, 1],
                 pos[tm, 2],
-                marker='v',
+                marker="v",
                 s=60,
-                edgecolor='black',
-                color='red'
+                edgecolor="black",
+                color="red",
+                zorder=10,
             )
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -146,12 +155,13 @@ def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=No
                     [values[start - 1], values[end]],
                     linestyle="--",
                     color=line.get_color(),
-                    linewidth=1
+                    linewidth=1,
+                    zorder=line.get_zorder() - 1,
                 )
 
     for tm in time_markers:
         if 0 <= tm < len(times):
-            ax.scatter(times[tm], values[tm], marker='v', color='red', zorder=5)
+            ax.scatter(times[tm], values[tm], marker='v', color='red', zorder=10)
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(ylabel)
