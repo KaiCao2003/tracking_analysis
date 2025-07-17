@@ -7,6 +7,14 @@ class Config:
         with open(path, 'r') as f:
             self._cfg = yaml.safe_load(f)
 
+        # Normalize time_markers to a list of floats
+        tmarkers = self._cfg.get('time_markers')
+        if isinstance(tmarkers, str):
+            try:
+                self._cfg['time_markers'] = [float(t) for t in tmarkers.split(',') if t]
+            except ValueError:
+                self._cfg['time_markers'] = []
+
         # Interpret `null` end_time as “all data”
         if self._cfg['interval'].get('end_time') is None:
             self._cfg['interval']['end_time'] = float('inf')

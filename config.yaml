@@ -1,7 +1,7 @@
 # Path to the input CSV (absolute or relative)
 
-input_file: "./data/output1.csv"
-#input_file: "./data/input.csv"
+input_file: "./data/input.csv"
+#input_file: "./data/output1.csv"
 
 
 # Time interval in seconds. Use null for end to cover entire file.
@@ -11,8 +11,7 @@ interval:
 
 # Extra time markers in seconds to draw on plots
 # Use null for no markers
-time_markers:
-  10,200
+time_markers: [10, 200]
 
 # List of IDs (rigid-body base names) to analyze; empty = all
 groups: [H1]
