@@ -22,8 +22,9 @@ def _annotate_ranges(ax, ranges, times):
     )
 
 
-def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None):
-    fig, ax = plt.subplots()
+def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None,
+                       full_size=False):
+    fig, ax = plt.subplots(figsize=(12, 8) if full_size else None)
     points = pos[:, :2]
     mask = ~np.isnan(points).any(axis=1)
     segments = np.stack([points[:-1], points[1:]], axis=1)
@@ -59,8 +60,9 @@ def plot_trajectory_2d(pos, times, time_markers, out_path, anomalies=None):
     fig.savefig(out_path)
     plt.close(fig)
 
-def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None):
-    fig = plt.figure()
+def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None,
+                       full_size=False):
+    fig = plt.figure(figsize=(12, 8) if full_size else None)
     ax = fig.add_subplot(111, projection="3d")
     mask = ~np.isnan(pos).any(axis=1)
     segments = np.stack([pos[:-1], pos[1:]], axis=1)
@@ -106,9 +108,10 @@ def plot_trajectory_3d(pos, times, time_markers, out_path, anomalies=None):
     fig.savefig(out_path)
     plt.close(fig)
 
-def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=None):
+def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=None,
+                     full_size=False, x_limit=None, y_limit=None):
     """Plot a time series with optional anomaly gaps."""
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(12, 8) if full_size else None)
     ax.plot(times, values)
 
     # dashed connections across filtered ranges
@@ -130,6 +133,10 @@ def plot_time_series(values, times, ylabel, time_markers, out_path, anomalies=No
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(ylabel)
     ax.set_title(f"{ylabel} vs Time")
+    if x_limit is not None:
+        ax.set_xlim(0, x_limit)
+    if y_limit is not None:
+        ax.set_ylim(0, y_limit)
 
     if anomalies:
         _annotate_ranges(ax, anomalies, times)

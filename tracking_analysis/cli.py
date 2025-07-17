@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from tracking_analysis.config import Config
-from tracking_analysis.reader import load_data
+from tracking_analysis.reader import load_data, preprocess_csv
 from tracking_analysis.filtering import (
     filter_missing,
     filter_anomalies,
@@ -34,12 +34,27 @@ def main():
     # Load configuration
     cfg = Config(args.config)
 
-    # Load data + frame/time columns
-    df, frame_col, time_col = load_data(cfg.get('input_file'))
+    # Optionally preprocess the CSV
+    input_path = cfg.get('input_file')
+    if cfg.get('preprocess', 'enable'):
+        preprocess_csv(
+            input_path,
+            cfg.get('preprocess', 'output_file'),
+            cfg.get('preprocess', 'summary_file'),
+        )
 
-    # Interval selection (frames)
-    start = cfg.get('interval', 'start_frame')
-    end   = cfg.get('interval', 'end_frame')
+    # Load data + frame/time columns from the original file
+    df, frame_col, time_col = load_data(input_path)
+
+    # Convert time-based interval to frame indices
+    start_time = cfg.get('interval', 'start_time', default=0.0)
+    end_time   = cfg.get('interval', 'end_time')
+    times_full = df[time_col].values
+    start = int(np.searchsorted(times_full, start_time, side='left'))
+    if end_time == float('inf'):
+        end = float('inf')
+    else:
+        end = int(np.searchsorted(times_full, end_time, side='right')) - 1
 
     # Static/missing filtering
     missing = filter_missing(df, start, end)
@@ -78,9 +93,6 @@ def main():
     # Prepare output directory
     out_dir = cfg.get('output','output_dir')
     os.makedirs(out_dir, exist_ok=True)
-
-    # Full timestamp array
-    times_full = df[time_col].values
 
     for id_ in selected_ids:
         if id_ not in groups:
@@ -196,6 +208,7 @@ def main():
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_traj2d.svg"),
                 anomalies=speed_ranges,
+                full_size=cfg.get('output', 'full_size_plots', default=False),
             )
         if cfg.get('output', 'plot_trajectory_3d'):
             plot_trajectory_3d(
@@ -204,6 +217,7 @@ def main():
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_traj3d.svg"),
                 anomalies=speed_ranges,
+                full_size=cfg.get('output', 'full_size_plots', default=False),
             )
         if cfg.get('output', 'plot_linear_speed'):
             plot_time_series(
@@ -213,6 +227,9 @@ def main():
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_speed.svg"),
                 anomalies=speed_ranges,
+                full_size=cfg.get('output', 'full_size_plots', default=False),
+                x_limit=cfg.get('output', 'x_limit'),
+                y_limit=cfg.get('output', 'y_limit'),
             )
         if cfg.get('output', 'plot_angular_speed'):
             plot_time_series(
@@ -222,6 +239,9 @@ def main():
                 tmarkers,
                 os.path.join(out_dir, f"{id_}_angular.svg"),
                 anomalies=ang_ranges,
+                full_size=cfg.get('output', 'full_size_plots', default=False),
+                x_limit=cfg.get('output', 'x_limit'),
+                y_limit=cfg.get('output', 'y_limit'),
             )
 
         # Export raw speed data when requested
