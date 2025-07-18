@@ -366,7 +366,7 @@ def create_app(cfg):
                 max=t_max,
               
                 # step = 1,
-                step = max((t_max - t_min) / 60, 0.001),
+                step = max((t_max - t_min) / 50, 0.001),
               
                 value=[t_min, t_max],
                 allowCross=False,
@@ -492,7 +492,7 @@ def create_app(cfg):
         start, end = val
         
         # step = 1
-        step = max((maximum - start) / 60, 0.001)
+        step = max((maximum - start) / 50, 0.001)
 
         if end + step > maximum:
             return [start, maximum]
