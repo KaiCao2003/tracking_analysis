@@ -37,21 +37,24 @@ def create_app(cfg: Config) -> Dash:
                 clearable=False,
             ),
             html.Div(
+                dcc.RangeSlider(
+                    id="time-range",
+                    min=t_min,
+                    max=t_max,
+                    step=slider_step,
+                    value=[t_min, t_max],
+                    allowCross=False,
+                    tooltip={"placement": "bottom"},
+                ),
+                style={"width": "100%"},
+            ),
+            html.Div(
                 [
-                    dcc.RangeSlider(
-                        id="time-range",
-                        min=t_min,
-                        max=t_max,
-                        step=slider_step,
-                        value=[t_min, t_max],
-                        allowCross=False,
-                        tooltip={"placement": "bottom"},
-                    ),
                     html.Button("Play", id="play-btn", n_clicks=0),
                     dcc.Interval(id="play-int", interval=1000, disabled=True),
                     html.Div(id="status-bar", children="Ready"),
 
-                  
+
                 ],
                 style={"display": "flex", "gap": "10px", "alignItems": "center"},
             ),
@@ -64,7 +67,7 @@ def create_app(cfg: Config) -> Dash:
                         style={"flex": "1", "height": "600px", "width": "600px"},
                     ),
 
-                  
+
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
