@@ -50,17 +50,17 @@ def create_app(cfg: Config) -> Dash:
             html.Div(id="status-bar", children="Ready"),
             html.Div(
                 [
-                    dcc.Graph(id="traj3d", style={"width": "480px", "height": "480px"}),
-                    dcc.Graph(id="traj2d", style={"width": "480px", "height": "480px"}),
+                    dcc.Graph(id="traj3d", style={"width": "100%", "height": "600px"}),
+                    dcc.Graph(id="traj2d", style={"width": "100%", "height": "600px"}),
 
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
             html.Div(
                 [
-                    dcc.Graph(id="speed", style={"width": "480px", "height": "300px"}),
+                    dcc.Graph(id="speed", style={"width": "100%", "height": "400px"}),
                     dcc.Graph(
-                        id="angular", style={"width": "480px", "height": "300px"}
+                        id="angular", style={"width": "100%", "height": "400px"}
                     ),
 
                 ],
@@ -126,27 +126,45 @@ def create_app(cfg: Config) -> Dash:
         Output("info", "children"),
         Input("traj3d", "clickData"),
         Input("traj2d", "clickData"),
+        Input("speed", "clickData"),
+        Input("angular", "clickData"),
         State("entity-dropdown", "value"),
     )
-    def _display_info(click3d, click2d, selected_id):
-        click = click3d or click2d
-        if not selected_id or not click:
-            return "Click a point on either plot"
-        idx = click["points"][0]["pointIndex"]
+    def _display_info(click3d, click2d, click_speed, click_ang, selected_id):
+        ctx = callback_context
+        if not selected_id or not ctx.triggered:
+            return "Click a point on any plot"
+
+        trigger = ctx.triggered_id
         d = data[selected_id]
-        t = d["times"][idx]
-        p = d["pos"][idx]
-        iv = np.searchsorted(d["t_speed"], t)
-        ia = np.searchsorted(d["t_ang_vel"], t)
-        spd = d["speed"][iv] if iv < len(d["speed"]) else float("nan")
-        ang_spd = d["ang_speed"][ia] if ia < len(d["ang_speed"]) else float("nan")
-        ang_vec = d["ang_vel"][ia] if ia < len(d["ang_vel"]) else np.array([np.nan] * 3)
-        return (
-            f"Time: {t:.3f}s\n"
-            f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}\n"
-            f"Speed: {spd:.3f}\nAngular Speed: {ang_spd:.3f}\n"
-            f"Wx: {ang_vec[0]:.3f}\nWy: {ang_vec[1]:.3f}\nWz: {ang_vec[2]:.3f}"
-        )
+
+        if trigger in {"traj3d", "traj2d"}:
+            click = click3d if trigger == "traj3d" else click2d
+            if not click:
+                raise PreventUpdate
+            idx = click["points"][0]["pointIndex"]
+            t = d["times"][idx]
+            p = d["pos"][idx]
+            return (
+                f"Time: {t:.3f}s\n"
+                f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}"
+            )
+
+        if trigger == "speed":
+            if not click_speed:
+                raise PreventUpdate
+            t = click_speed["points"][0]["x"]
+            spd = click_speed["points"][0]["y"]
+            return f"Time: {float(t):.3f}s\nSpeed: {float(spd):.3f}"
+
+        if trigger == "angular":
+            if not click_ang:
+                raise PreventUpdate
+            t = click_ang["points"][0]["x"]
+            ang = click_ang["points"][0]["y"]
+            return f"Time: {float(t):.3f}s\nAngular Speed: {float(ang):.3f}"
+
+        raise PreventUpdate
 
     @app.callback(
         Output("play-int", "disabled"),
