@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 import numpy as np
-from dash import Dash, dcc, html, dash_table
+from dash import Dash, dcc, html, dash_table, callback_context
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
@@ -151,15 +151,29 @@ def create_app(cfg: Config) -> Dash:
     @app.callback(
         Output("time-range", "value"),
         Input("play-int", "n_intervals"),
+        Input("speed", "relayoutData"),
+        Input("angular", "relayoutData"),
         State("time-range", "value"),
         State("time-range", "max"),
+        prevent_initial_call=True,
     )
-    def _advance(_, val, maximum):
-        start, end = val
-        step = round(max((maximum - start) / 50, 0.1), 1)
-        if end + step > maximum:
-            return [start, maximum]
-        return [start + step, end + step]
+    def _update_range(_, r_speed, r_ang, val, maximum):
+        """Advance playback or sync slider when plots are zoomed."""
+        trigger = callback_context.triggered_id
+        if trigger == "play-int":
+            start, end = val
+            step = round(max((maximum - start) / 50, 0.1), 1)
+            if end + step > maximum:
+                return [start, maximum]
+            return [start + step, end + step]
+        r = r_ang or r_speed
+        if not r:
+            raise PreventUpdate
+        if "xaxis.range" in r:
+            return [float(r["xaxis.range"][0]), float(r["xaxis.range"][1])]
+        if "xaxis.range[0]" in r and "xaxis.range[1]" in r:
+            return [float(r["xaxis.range[0]"]), float(r["xaxis.range[1]"])]
+        raise PreventUpdate
 
     @app.callback(
         Output("highlight-time", "data"),
@@ -179,21 +193,7 @@ def create_app(cfg: Config) -> Dash:
                     return float(p["x"])
         raise PreventUpdate
 
-    @app.callback(
-        Output("time-range", "value"),
-        Input("speed", "relayoutData"),
-        Input("angular", "relayoutData"),
-        prevent_initial_call=True,
-    )
-    def _sync_range(r1, r2):
-        r = r2 or r1
-        if not r:
-            raise PreventUpdate
-        if "xaxis.range" in r:
-            return [float(r["xaxis.range"][0]), float(r["xaxis.range"][1])]
-        if "xaxis.range[0]" in r and "xaxis.range[1]" in r:
-            return [float(r["xaxis.range[0]"]), float(r["xaxis.range[1]"])]
-        raise PreventUpdate
+
 
     @app.callback(
         Output("save-status", "children"),
