@@ -138,15 +138,15 @@ def create_app(cfg: Config) -> Dash:
     @app.callback(
         Output("play-int", "disabled"),
         Output("play-btn", "children"),
-        Output("status-bar", "children"),
+        # Output("status-bar", "children"),
         Input("play-btn", "n_clicks"),
         State("play-int", "disabled"),
         prevent_initial_call=True,
     )
     def _toggle_play(n, disabled):
         disabled = not disabled
-        status = "Playing" if not disabled else "Paused"
-        return disabled, ("Play" if disabled else "Pause"), status
+        # status = "Playing" if not disabled else "Paused"
+        return disabled, ("Play" if disabled else "Pause")  # , status
 
     @app.callback(
         Output("time-range", "value"),
