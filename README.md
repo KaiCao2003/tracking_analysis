@@ -54,9 +54,16 @@ python -m tracking_analysis.trim <input.csv> [output.csv] --summary summary.txt
 
 ## Interactive Web Application
 
-An interactive Dash web app is provided for exploring trajectories. It loads the
-same configuration file and visualizes the data in 2D and 3D. Clicking a point
-reveals the exact time, position, linear speed and angular velocities.
+The Dash-based web interface mirrors the CLI processing pipeline. It reads
+`config.yaml`, applies the same filtering, slicing and smoothing settings and
+highlights any time markers. Four interactive graphs are displayed:
+3D trajectory, 2D trajectory, linear speed and angular speed.
+Use the one‑second time-range slider to focus on a portion of the recording. The **Play**
+button animates the slider to replay the track. Zooming or selecting a region in any
+plot updates the others, and hovering a point highlights the same time across all graphs.
+Clicking a point shows the exact position and velocity, while the raw values for the selected
+interval appear in a table below. The YAML configuration can be edited directly in the browser
+and saved to a new file.
 
 Run the server:
 
