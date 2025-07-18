@@ -239,6 +239,7 @@ def make_figures(
             )
         )
     fig2d.update_layout(xaxis_title="X", yaxis_title="Y", title="2D Trajectory")
+    fig2d.update_yaxes(scaleanchor="x", scaleratio=1)
 
     fig_speed = go.Figure()
     fig_speed.add_trace(
