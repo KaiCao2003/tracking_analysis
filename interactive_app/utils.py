@@ -39,6 +39,7 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
     start_time = cfg.get("interval", "start_time", default=0.0)
     end_time = cfg.get("interval", "end_time")
     times_full = df[time_col].values
+    frames_full = np.arange(len(times_full)) + 1
     start = int(np.searchsorted(times_full, start_time, side="left"))
     if end_time == float("inf"):
         end = float("inf")
@@ -58,9 +59,11 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
         if end == float("inf"):
             sub = df.iloc[start:]
             times = times_full[start:]
+            frames = frames_full[start:]
         else:
             sub = df.iloc[start : end + 1]
             times = times_full[start : end + 1]
+            frames = frames_full[start : end + 1]
 
         ent_df = sub.xs(gid, level=0, axis=1)
         if "Position" not in ent_df.columns.get_level_values(1):
@@ -161,13 +164,19 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             if 0 <= idx < len(times):
                 markers.append(idx)
 
+        frames_speed = frames[1:] if len(frames) > 1 else np.array([])
+        frames_ang = frames[1:] if len(frames) > 1 else np.array([])
+
         results[gid] = {
             "pos": pos,
             "times": times,
+            "frames": frames,
             "speed": speed,
             "t_speed": t_v,
+            "frames_speed": frames_speed,
             "ang_speed": ang_speed,
             "t_ang_speed": t_as,
+            "frames_ang": frames_ang,
             "ang_vel": ang_vel,
             "t_ang_vel": t_av,
             "markers": markers,
@@ -179,11 +188,14 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
 def make_figures(
     pos: np.ndarray,
     times: np.ndarray,
+    frames: np.ndarray,
     markers: List[int],
     speed: np.ndarray,
     t_speed: np.ndarray,
+    frames_speed: np.ndarray,
     ang_speed: np.ndarray,
     t_ang_speed: np.ndarray,
+    frames_ang: np.ndarray,
 ) -> Tuple[go.Figure, go.Figure, go.Figure, go.Figure]:
     """Create the 3D/2D trajectory and speed plots."""
     fig3d = go.Figure()
@@ -196,7 +208,11 @@ def make_figures(
             marker=dict(size=3, color=times, colorscale="Rainbow"),
             line=dict(color="blue"),
             name="trajectory",
-            customdata=times,
+            customdata=np.stack([frames, times], axis=-1),
+            hovertemplate=(
+                "Frame %{customdata[0]}<br>"
+                "X %{x:.3f}<br>Y %{y:.3f}<br>Z %{z:.3f}<extra></extra>"
+            ),
         )
     )
     for idx in markers:
@@ -225,7 +241,11 @@ def make_figures(
             mode="lines+markers",
             marker=dict(size=3, color=times, colorscale="Rainbow"),
             name="trajectory",
-            customdata=times,
+            customdata=np.stack([frames, times], axis=-1),
+            hovertemplate=(
+                "Frame %{customdata[0]}<br>"
+                "X %{x:.3f}<br>Y %{y:.3f}<extra></extra>"
+            ),
         )
     )
     for idx in markers:
@@ -243,7 +263,15 @@ def make_figures(
 
     fig_speed = go.Figure()
     fig_speed.add_trace(
-        go.Scatter(x=t_speed, y=speed, mode="lines", name="speed", line=dict(color="blue"))
+        go.Scatter(
+            x=t_speed,
+            y=speed,
+            mode="lines",
+            name="speed",
+            line=dict(color="blue"),
+            customdata=frames_speed,
+            hovertemplate="Frame %{customdata}<br>Speed %{y:.3f}<extra></extra>",
+        )
     )
     for tm in markers:
         if tm < len(times):
@@ -256,7 +284,15 @@ def make_figures(
 
     fig_ang = go.Figure()
     fig_ang.add_trace(
-        go.Scatter(x=t_ang_speed, y=ang_speed, mode="lines", name="angular", line=dict(color="blue"))
+        go.Scatter(
+            x=t_ang_speed,
+            y=ang_speed,
+            mode="lines",
+            name="angular",
+            line=dict(color="blue"),
+            customdata=frames_ang,
+            hovertemplate="Frame %{customdata}<br>Angular %{y:.3f}<extra></extra>",
+        )
     )
     for tm in markers:
         if tm < len(times):
@@ -281,6 +317,7 @@ def build_table(d: dict, start: float, end: float) -> List[dict]:
     """Create a list of rows for the DataTable from a time range."""
     sl = slice_range(d["times"], start, end)
     times = d["times"][sl]
+    frames = d["frames"][sl]
     pos = d["pos"][sl]
     iv = np.searchsorted(d["t_speed"], times)
     ia = np.searchsorted(d["t_ang_vel"], times)
@@ -290,6 +327,7 @@ def build_table(d: dict, start: float, end: float) -> List[dict]:
         ang = d["ang_speed"][ia[idx]] if ia[idx] < len(d["ang_speed"]) else float("nan")
         rows.append(
             {
+                "frame": int(frames[idx]),
                 "time": float(t),
                 "x": float(pos[idx, 0]),
                 "y": float(pos[idx, 1]),
