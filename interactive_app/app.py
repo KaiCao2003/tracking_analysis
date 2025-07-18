@@ -6,6 +6,7 @@ import yaml
 from datetime import datetime
 from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 
 from tracking_analysis.config import Config
@@ -179,7 +180,16 @@ def _prepare_data(cfg):
     return results, selected
 
 
-def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
+def _make_figures(
+    pos,
+    times,
+    markers,
+    speed,
+    t_speed,
+    ang_speed,
+    t_ang_speed,
+    highlight=None,
+):
     fig3d = go.Figure()
     fig3d.add_trace(
         go.Scatter3d(
@@ -187,9 +197,11 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
             y=pos[:, 1],
             z=pos[:, 2],
             mode="lines+markers",
-            marker=dict(size=3, color=times, colorscale="Viridis"),
+            marker=dict(size=3, color=times, colorscale="Rainbow"),
             line=dict(color="blue"),
             name="trajectory",
+            customdata=times,
+
         )
     )
     for idx in markers:
@@ -199,10 +211,24 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
                 y=[pos[idx, 1]],
                 z=[pos[idx, 2]],
                 mode="markers",
-                marker=dict(color="red", symbol="triangle-down", size=5),
+                marker=dict(color="orange", symbol="triangle-down", size=5),
                 showlegend=False,
             )
         )
+    if highlight is not None:
+        hi = int(np.searchsorted(times, highlight, side="left"))
+        if 0 <= hi < len(times):
+            fig3d.add_trace(
+                go.Scatter3d(
+                    x=[pos[hi, 0]],
+                    y=[pos[hi, 1]],
+                    z=[pos[hi, 2]],
+                    mode="markers",
+                    marker=dict(color="orange", size=4, symbol="diamond"),
+                    showlegend=False,
+                )
+            )
+
     fig3d.update_layout(
         margin=dict(l=0, r=0, b=0, t=30),
         scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),
@@ -215,8 +241,10 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
             x=pos[:, 0],
             y=pos[:, 1],
             mode="lines+markers",
-            marker=dict(size=3, color=times, colorscale="Viridis"),
+            marker=dict(size=3, color=times, colorscale="Rainbow"),
             name="trajectory",
+            customdata=times,
+
         )
     )
     for idx in markers:
@@ -225,36 +253,58 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
                 x=[pos[idx, 0]],
                 y=[pos[idx, 1]],
                 mode="markers",
-                marker=dict(color="red", symbol="triangle-down", size=8),
+                marker=dict(color="orange", symbol="triangle-down", size=8),
                 showlegend=False,
             )
         )
+    if highlight is not None:
+        hi = int(np.searchsorted(times, highlight, side="left"))
+        if 0 <= hi < len(times):
+            fig2d.add_trace(
+                go.Scatter(
+                    x=[pos[hi, 0]],
+                    y=[pos[hi, 1]],
+                    mode="markers",
+                    marker=dict(color="orange", size=6, symbol="diamond"),
+                    showlegend=False,
+                )
+            )
     fig2d.update_layout(xaxis_title="X", yaxis_title="Y", title="2D Trajectory")
 
     fig_speed = go.Figure()
-    fig_speed.add_trace(go.Scatter(x=t_speed, y=speed, mode="lines", name="speed"))
+    fig_speed.add_trace(
+        go.Scatter(x=t_speed, y=speed, mode="lines", name="speed", line=dict(color="blue"))
+    )
+
     for tm in markers:
         if tm < len(times):
             fig_speed.add_vline(
                 x=times[tm],
-                line_color="red",
-                line_dash="dot",
+                line_color="orange",
+                line_dash="dash",
             )
+    if highlight is not None:
+        fig_speed.add_vline(x=highlight, line_color="orange", line_dash="dash")
+
     fig_speed.update_layout(
         xaxis_title="Time (s)", yaxis_title="Linear Speed", title="Linear Speed"
     )
 
     fig_ang = go.Figure()
     fig_ang.add_trace(
-        go.Scatter(x=t_ang_speed, y=ang_speed, mode="lines", name="angular")
+        go.Scatter(x=t_ang_speed, y=ang_speed, mode="lines", name="angular", line=dict(color="blue"))
+
     )
     for tm in markers:
         if tm < len(times):
             fig_ang.add_vline(
                 x=times[tm],
-                line_color="red",
-                line_dash="dot",
+                line_color="orange",
+                line_dash="dash",
             )
+    if highlight is not None:
+        fig_ang.add_vline(x=highlight, line_color="orange", line_dash="dash")
+
     fig_ang.update_layout(
         xaxis_title="Time (s)", yaxis_title="Angular Speed", title="Angular Speed"
     )
@@ -314,17 +364,32 @@ def create_app(cfg):
                 id="time-range",
                 min=t_min,
                 max=t_max,
-                step=max((t_max - t_min) / 200, 0.001),
+              
+                // step = 1,
+                step = max((t_max - t_min) / 60, 0.001),
+              
                 value=[t_min, t_max],
                 allowCross=False,
                 tooltip={"placement": "bottom"},
             ),
             html.Button("Play", id="play-btn", n_clicks=0),
-            dcc.Interval(id="play-int", interval=500, disabled=True),
-            dcc.Graph(id="traj3d"),
-            dcc.Graph(id="traj2d"),
-            dcc.Graph(id="speed"),
-            dcc.Graph(id="angular"),
+            dcc.Interval(id="play-int", interval=1000, disabled=True),
+            dcc.Store(id="highlight-time"),
+            html.Div(
+                [
+                    dcc.Graph(id="traj3d", style={"flex": "1 1 45%", "minWidth": "300px"}),
+                    dcc.Graph(id="traj2d", style={"flex": "1 1 45%", "minWidth": "300px"}),
+                ],
+                style={"display": "flex", "flexWrap": "wrap"},
+            ),
+            html.Div(
+                [
+                    dcc.Graph(id="speed", style={"flex": "1 1 45%", "minWidth": "300px"}),
+                    dcc.Graph(id="angular", style={"flex": "1 1 45%", "minWidth": "300px"}),
+                ],
+                style={"display": "flex", "flexWrap": "wrap"},
+            ),
+
             dash_table.DataTable(
                 id="raw-table",
                 columns=[
@@ -341,7 +406,8 @@ def create_app(cfg):
             ),
             html.Button("Save Config", id="save-config"),
             html.Div(id="save-status"),
-            html.Pre(id="info", children="Click a point on either plot"),
+            html.Pre(id="info", children="Hover on any plot to highlight; click for details"),
+
         ]
     )
 
@@ -353,8 +419,10 @@ def create_app(cfg):
         Output("raw-table", "data"),
         Input("entity-dropdown", "value"),
         Input("time-range", "value"),
+        Input("highlight-time", "data"),
     )
-    def _update_plots(selected_id, t_range):
+    def _update_plots(selected_id, t_range, highlight):
+
         empty = go.Figure()
         if not selected_id:
             return empty, empty, empty, empty, []
@@ -371,6 +439,8 @@ def create_app(cfg):
             d["t_speed"][sl_v],
             d["ang_speed"][sl_a],
             d["t_ang_speed"][sl_a],
+            highlight,
+
         )
         table = _build_table(d, start, end)
         return (*figs, table)
@@ -420,12 +490,52 @@ def create_app(cfg):
     )
     def _advance(_, val, maximum):
         start, end = val
-        step = max((maximum - start) / 200, 0.001)
+        
+        // step = 1
+        step = max((maximum - start) / 60, 0.001)
+
         if end + step > maximum:
             return [start, maximum]
         return [start + step, end + step]
 
     @app.callback(
+        Output("highlight-time", "data"),
+        Input("traj3d", "hoverData"),
+        Input("traj2d", "hoverData"),
+        Input("speed", "hoverData"),
+        Input("angular", "hoverData"),
+        State("highlight-time", "data"),
+        prevent_initial_call=True,
+    )
+    def _update_highlight(h3d, h2d, hs, ha, current):
+        for hov in (h3d, h2d, hs, ha):
+            if hov and hov.get("points"):
+                p = hov["points"][0]
+                if "customdata" in p:
+                    return float(p["customdata"])
+                if "x" in p:
+                    return float(p["x"])
+        raise PreventUpdate
+
+    @app.callback(
+        Output("time-range", "value"),
+        Input("speed", "relayoutData"),
+        Input("angular", "relayoutData"),
+        State("time-range", "value"),
+        prevent_initial_call=True,
+    )
+    def _sync_range(r1, r2, cur):
+        r = r2 or r1
+        if not r:
+            raise PreventUpdate
+        if "xaxis.range" in r:
+            return [float(r["xaxis.range"][0]), float(r["xaxis.range"][1])]
+        if "xaxis.range[0]" in r and "xaxis.range[1]" in r:
+            return [float(r["xaxis.range[0]"]), float(r["xaxis.range[1]"])]
+        raise PreventUpdate
+
+    @app.callback(
+
         Output("save-status", "children"),
         Input("save-config", "n_clicks"),
         State("config-editor", "value"),

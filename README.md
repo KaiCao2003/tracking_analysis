@@ -58,13 +58,13 @@ The Dash-based web interface mirrors the CLI processing pipeline. It reads
 `config.yaml`, applies the same filtering, slicing and smoothing settings and
 highlights any time markers. Four interactive graphs are displayed:
 3D trajectory, 2D trajectory, linear speed and angular speed.
-Use the time-range slider to focus on a portion of the recording. The **Play**
-button animates the slider to replay the track. Selecting a point reveals
-precise position and velocity information and the raw values for the selected
-interval are shown in a table below the plots. The YAML configuration can be
-edited directly in the browser and saved to a new file.
+Use the one‑second time-range slider to focus on a portion of the recording. The **Play**
+button animates the slider to replay the track. Zooming or selecting a region in any
+plot updates the others, and hovering a point highlights the same time across all graphs.
+Clicking a point shows the exact position and velocity, while the raw values for the selected
+interval appear in a table below. The YAML configuration can be edited directly in the browser
+and saved to a new file.
 
-Run the server:
 
 ```bash
 python -m interactive_app.app --config config.yaml
