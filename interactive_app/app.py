@@ -161,7 +161,7 @@ def main():
     cfg = Config(args.config)
     port = cfg.get("webapp", "port", default=3010)
     app = create_app(cfg)
-    app.run_server(debug=False, host="0.0.0.0", port=port)
+    app.run(debug=False, host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
