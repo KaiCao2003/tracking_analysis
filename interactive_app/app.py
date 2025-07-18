@@ -50,6 +50,7 @@ def create_app(cfg: Config) -> Dash:
                     html.Button("Play", id="play-btn", n_clicks=0),
                     dcc.Interval(id="play-int", interval=1000, disabled=True),
                     html.Div(id="status-bar", children="Ready"),
+
                 ],
                 style={"display": "flex", "gap": "10px", "alignItems": "center"},
             ),
