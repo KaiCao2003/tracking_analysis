@@ -201,6 +201,7 @@ def _make_figures(
             line=dict(color="blue"),
             name="trajectory",
             customdata=times,
+
         )
     )
     for idx in markers:
@@ -227,6 +228,7 @@ def _make_figures(
                     showlegend=False,
                 )
             )
+
     fig3d.update_layout(
         margin=dict(l=0, r=0, b=0, t=30),
         scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),
@@ -242,6 +244,7 @@ def _make_figures(
             marker=dict(size=3, color=times, colorscale="Rainbow"),
             name="trajectory",
             customdata=times,
+
         )
     )
     for idx in markers:
@@ -272,6 +275,7 @@ def _make_figures(
     fig_speed.add_trace(
         go.Scatter(x=t_speed, y=speed, mode="lines", name="speed", line=dict(color="blue"))
     )
+
     for tm in markers:
         if tm < len(times):
             fig_speed.add_vline(
@@ -281,6 +285,7 @@ def _make_figures(
             )
     if highlight is not None:
         fig_speed.add_vline(x=highlight, line_color="orange", line_dash="dash")
+
     fig_speed.update_layout(
         xaxis_title="Time (s)", yaxis_title="Linear Speed", title="Linear Speed"
     )
@@ -288,6 +293,7 @@ def _make_figures(
     fig_ang = go.Figure()
     fig_ang.add_trace(
         go.Scatter(x=t_ang_speed, y=ang_speed, mode="lines", name="angular", line=dict(color="blue"))
+
     )
     for tm in markers:
         if tm < len(times):
@@ -298,6 +304,7 @@ def _make_figures(
             )
     if highlight is not None:
         fig_ang.add_vline(x=highlight, line_color="orange", line_dash="dash")
+
     fig_ang.update_layout(
         xaxis_title="Time (s)", yaxis_title="Angular Speed", title="Angular Speed"
     )
@@ -357,7 +364,10 @@ def create_app(cfg):
                 id="time-range",
                 min=t_min,
                 max=t_max,
-                step=1,
+              
+                // step = 1,
+                step = max((t_max - t_min) / 60, 0.001),
+              
                 value=[t_min, t_max],
                 allowCross=False,
                 tooltip={"placement": "bottom"},
@@ -379,6 +389,7 @@ def create_app(cfg):
                 ],
                 style={"display": "flex", "flexWrap": "wrap"},
             ),
+
             dash_table.DataTable(
                 id="raw-table",
                 columns=[
@@ -396,6 +407,7 @@ def create_app(cfg):
             html.Button("Save Config", id="save-config"),
             html.Div(id="save-status"),
             html.Pre(id="info", children="Hover on any plot to highlight; click for details"),
+
         ]
     )
 
@@ -410,6 +422,7 @@ def create_app(cfg):
         Input("highlight-time", "data"),
     )
     def _update_plots(selected_id, t_range, highlight):
+
         empty = go.Figure()
         if not selected_id:
             return empty, empty, empty, empty, []
@@ -427,6 +440,7 @@ def create_app(cfg):
             d["ang_speed"][sl_a],
             d["t_ang_speed"][sl_a],
             highlight,
+
         )
         table = _build_table(d, start, end)
         return (*figs, table)
@@ -476,7 +490,10 @@ def create_app(cfg):
     )
     def _advance(_, val, maximum):
         start, end = val
-        step = 1
+        
+        // step = 1
+        step = max((maximum - start) / 60, 0.001)
+
         if end + step > maximum:
             return [start, maximum]
         return [start + step, end + step]
@@ -518,6 +535,7 @@ def create_app(cfg):
         raise PreventUpdate
 
     @app.callback(
+
         Output("save-status", "children"),
         Input("save-config", "n_clicks"),
         State("config-editor", "value"),

@@ -65,7 +65,6 @@ Clicking a point shows the exact position and velocity, while the raw values for
 interval appear in a table below. The YAML configuration can be edited directly in the browser
 and saved to a new file.
 
-Run the server:
 
 ```bash
 python -m interactive_app.app --config config.yaml
