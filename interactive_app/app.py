@@ -52,6 +52,7 @@ def create_app(cfg: Config) -> Dash:
                 [
                     dcc.Graph(id="traj3d", style={"width": "480px", "height": "480px"}),
                     dcc.Graph(id="traj2d", style={"width": "480px", "height": "480px"}),
+
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
@@ -61,6 +62,7 @@ def create_app(cfg: Config) -> Dash:
                     dcc.Graph(
                         id="angular", style={"width": "480px", "height": "300px"}
                     ),
+
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
@@ -149,6 +151,7 @@ def create_app(cfg: Config) -> Dash:
     @app.callback(
         Output("play-int", "disabled"),
         Output("play-btn", "children"),
+
         Input("play-btn", "n_clicks"),
         State("play-int", "disabled"),
         prevent_initial_call=True,
@@ -156,6 +159,7 @@ def create_app(cfg: Config) -> Dash:
     def _toggle_play(n, disabled):
         disabled = not disabled
         return disabled, ("Play" if disabled else "Pause")
+
 
     @app.callback(
         Output("time-range", "value"),
@@ -195,6 +199,7 @@ def create_app(cfg: Config) -> Dash:
         return {"display": "none" if disp != "none" else "block"}
 
     @app.callback(
+
         Output("save-status", "children"),
         Input("save-config", "n_clicks"),
         State("config-editor", "value"),
