@@ -36,43 +36,50 @@ def create_app(cfg: Config) -> Dash:
                 id="entity-dropdown",
                 clearable=False,
             ),
-            dcc.RangeSlider(
-                id="time-range",
-                min=t_min,
-                max=t_max,
-                step=slider_step,
-                value=[t_min, t_max],
-                allowCross=False,
-                tooltip={"placement": "bottom"},
-            ),
-            html.Button("Play", id="play-btn", n_clicks=0),
-            dcc.Interval(id="play-int", interval=1000, disabled=True),
-            html.Div(id="status-bar", children="Ready"),
             html.Div(
                 [
-                    dcc.Graph(id="traj3d", style={"width": "480px", "height": "480px"}),
-                    dcc.Graph(id="traj2d", style={"width": "480px", "height": "480px"}),
-
-                ],
-                style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
-            ),
-            html.Div(
-                [
-                    dcc.Graph(id="speed", style={"width": "480px", "height": "300px"}),
-                    dcc.Graph(
-                        id="angular", style={"width": "480px", "height": "300px"}
+                    dcc.RangeSlider(
+                        id="time-range",
+                        min=t_min,
+                        max=t_max,
+                        step=slider_step,
+                        value=[t_min, t_max],
+                        allowCross=False,
+                        tooltip={"placement": "bottom"},
                     ),
-
+                    html.Button("Play", id="play-btn", n_clicks=0),
+                    dcc.Interval(id="play-int", interval=1000, disabled=True),
+                    html.Div(id="status-bar", children="Ready"),
+                ],
+                style={"display": "flex", "gap": "10px", "alignItems": "center"},
+            ),
+            html.Div(
+                [
+                    dcc.Graph(id="traj3d", style={"flex": "1", "height": "600px"}),
+                    dcc.Graph(
+                        id="traj2d",
+                        style={"flex": "1", "height": "600px", "width": "600px"},
+                    ),
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
+            dcc.Graph(id="speed", style={"width": "100%", "height": "400px"}),
+            dcc.Graph(id="angular", style={"width": "100%", "height": "400px"}),
             html.Button("Show Table", id="toggle-table", n_clicks=0),
             html.Div(
                 dash_table.DataTable(
                     id="raw-table",
                     columns=[
                         {"name": n, "id": n}
-                        for n in ["time", "x", "y", "z", "speed", "angular_speed"]
+                        for n in [
+                            "frame",
+                            "time",
+                            "x",
+                            "y",
+                            "z",
+                            "speed",
+                            "angular_speed",
+                        ]
                     ],
                     page_size=10,
                 ),
@@ -113,11 +120,14 @@ def create_app(cfg: Config) -> Dash:
         figs = make_figures(
             d["pos"][sl],
             d["times"][sl],
+            d["frames"][sl],
             [m - sl.start for m in d["markers"] if sl.start <= m < sl.stop],
             d["speed"][sl_v],
             d["t_speed"][sl_v],
+            d["frames_speed"][sl_v],
             d["ang_speed"][sl_a],
             d["t_ang_speed"][sl_a],
+            d["frames_ang"][sl_a],
         )
         table = build_table(d, start, end)
         return (*figs, table, "Updated")
@@ -126,27 +136,51 @@ def create_app(cfg: Config) -> Dash:
         Output("info", "children"),
         Input("traj3d", "clickData"),
         Input("traj2d", "clickData"),
+        Input("speed", "clickData"),
+        Input("angular", "clickData"),
         State("entity-dropdown", "value"),
     )
-    def _display_info(click3d, click2d, selected_id):
-        click = click3d or click2d
-        if not selected_id or not click:
-            return "Click a point on either plot"
-        idx = click["points"][0]["pointIndex"]
+    def _display_info(click3d, click2d, click_speed, click_ang, selected_id):
+        ctx = callback_context
+        if not selected_id or not ctx.triggered:
+            return "Click a point on any plot"
+
+        trigger = ctx.triggered_id
         d = data[selected_id]
-        t = d["times"][idx]
-        p = d["pos"][idx]
-        iv = np.searchsorted(d["t_speed"], t)
-        ia = np.searchsorted(d["t_ang_vel"], t)
-        spd = d["speed"][iv] if iv < len(d["speed"]) else float("nan")
-        ang_spd = d["ang_speed"][ia] if ia < len(d["ang_speed"]) else float("nan")
-        ang_vec = d["ang_vel"][ia] if ia < len(d["ang_vel"]) else np.array([np.nan] * 3)
-        return (
-            f"Time: {t:.3f}s\n"
-            f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}\n"
-            f"Speed: {spd:.3f}\nAngular Speed: {ang_spd:.3f}\n"
-            f"Wx: {ang_vec[0]:.3f}\nWy: {ang_vec[1]:.3f}\nWz: {ang_vec[2]:.3f}"
-        )
+
+        if trigger in {"traj3d", "traj2d"}:
+            click = click3d if trigger == "traj3d" else click2d
+            if not click:
+                raise PreventUpdate
+            idx = click["points"][0]["pointIndex"]
+            t = d["times"][idx]
+            frame = d["frames"][idx]
+            p = d["pos"][idx]
+            return (
+                f"Frame: {int(frame)}\n"
+                f"Time: {t:.3f}s\n"
+                f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}"
+            )
+
+        if trigger == "speed":
+            if not click_speed:
+                raise PreventUpdate
+            idx = click_speed["points"][0]["pointIndex"]
+            t = d["t_speed"][idx]
+            frame = d["frames_speed"][idx]
+            spd = click_speed["points"][0]["y"]
+            return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nSpeed: {float(spd):.3f}"
+
+        if trigger == "angular":
+            if not click_ang:
+                raise PreventUpdate
+            idx = click_ang["points"][0]["pointIndex"]
+            t = d["t_ang_speed"][idx]
+            frame = d["frames_ang"][idx]
+            ang = click_ang["points"][0]["y"]
+            return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nAngular Speed: {float(ang):.3f}"
+
+        raise PreventUpdate
 
     @app.callback(
         Output("play-int", "disabled"),
@@ -166,11 +200,13 @@ def create_app(cfg: Config) -> Dash:
         Input("play-int", "n_intervals"),
         Input("speed", "relayoutData"),
         Input("angular", "relayoutData"),
+        Input("traj3d", "relayoutData"),
+        Input("traj2d", "relayoutData"),
         State("time-range", "value"),
         State("time-range", "max"),
         prevent_initial_call=True,
     )
-    def _update_range(_, r_speed, r_ang, val, maximum):
+    def _update_range(_, r_speed, r_ang, r3d, r2d, val, maximum):
         """Advance playback or sync slider when plots are zoomed."""
         trigger = callback_context.triggered_id
         if trigger == "play-int":
@@ -179,7 +215,7 @@ def create_app(cfg: Config) -> Dash:
             if end + step > maximum:
                 return [start, maximum]
             return [start + step, end + step]
-        r = r_ang or r_speed
+        r = r_ang or r_speed or r3d or r2d
         if not r:
             raise PreventUpdate
         if "xaxis.range" in r:
