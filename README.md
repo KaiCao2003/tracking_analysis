@@ -54,11 +54,15 @@ python -m tracking_analysis.trim <input.csv> [output.csv] --summary summary.txt
 
 ## Interactive Web Application
 
-The Dash-based web interface now mirrors the CLI pipeline. It reads the same
-`config.yaml` and applies the configured time interval, smoothing and filtering
-options. Time markers are highlighted in all plots. Four interactive graphs are
-displayed: 3D trajectory, 2D trajectory, linear speed and angular speed. Clicking
-a point reveals the exact time, position and velocity values.
+The Dash-based web interface mirrors the CLI processing pipeline. It reads
+`config.yaml`, applies the same filtering, slicing and smoothing settings and
+highlights any time markers. Four interactive graphs are displayed:
+3D trajectory, 2D trajectory, linear speed and angular speed.
+Use the time-range slider to focus on a portion of the recording. The **Play**
+button animates the slider to replay the track. Selecting a point reveals
+precise position and velocity information and the raw values for the selected
+interval are shown in a table below the plots. The YAML configuration can be
+edited directly in the browser and saved to a new file.
 
 Run the server:
 

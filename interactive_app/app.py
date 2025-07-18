@@ -1,7 +1,10 @@
 import argparse
 import os
 import numpy as np
-from dash import Dash, dcc, html
+import pandas as pd
+import yaml
+from datetime import datetime
+from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 
@@ -80,7 +83,12 @@ def _prepare_data(cfg):
 
         # Velocities
         speed, t_v = compute_linear_velocity(
-            pos, times, smoothing=smoothing, window=window, polyorder=polyorder, method=method
+            pos,
+            times,
+            smoothing=smoothing,
+            window=window,
+            polyorder=polyorder,
+            method=method,
         )
 
         if rot is not None:
@@ -224,9 +232,7 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
     fig2d.update_layout(xaxis_title="X", yaxis_title="Y", title="2D Trajectory")
 
     fig_speed = go.Figure()
-    fig_speed.add_trace(
-        go.Scatter(x=t_speed, y=speed, mode="lines", name="speed")
-    )
+    fig_speed.add_trace(go.Scatter(x=t_speed, y=speed, mode="lines", name="speed"))
     for tm in markers:
         if tm < len(times):
             fig_speed.add_vline(
@@ -234,7 +240,9 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
                 line_color="red",
                 line_dash="dot",
             )
-    fig_speed.update_layout(xaxis_title="Time (s)", yaxis_title="Linear Speed", title="Linear Speed")
+    fig_speed.update_layout(
+        xaxis_title="Time (s)", yaxis_title="Linear Speed", title="Linear Speed"
+    )
 
     fig_ang = go.Figure()
     fig_ang.add_trace(
@@ -247,9 +255,42 @@ def _make_figures(pos, times, markers, speed, t_speed, ang_speed, t_ang_speed):
                 line_color="red",
                 line_dash="dot",
             )
-    fig_ang.update_layout(xaxis_title="Time (s)", yaxis_title="Angular Speed", title="Angular Speed")
+    fig_ang.update_layout(
+        xaxis_title="Time (s)", yaxis_title="Angular Speed", title="Angular Speed"
+    )
 
     return fig3d, fig2d, fig_speed, fig_ang
+
+
+def _slice_range(times, start, end):
+    """Return slice object covering the given time range."""
+    i0 = int(np.searchsorted(times, start, side="left"))
+    i1 = int(np.searchsorted(times, end, side="right"))
+    return slice(i0, i1)
+
+
+def _build_table(d, start, end):
+    """Create list of dicts for Dash DataTable from selected time range."""
+    sl = _slice_range(d["times"], start, end)
+    times = d["times"][sl]
+    pos = d["pos"][sl]
+    iv = np.searchsorted(d["t_speed"], times)
+    ia = np.searchsorted(d["t_ang_vel"], times)
+    rows = []
+    for idx, t in enumerate(times):
+        spd = d["speed"][iv[idx]] if iv[idx] < len(d["speed"]) else float("nan")
+        ang = d["ang_speed"][ia[idx]] if ia[idx] < len(d["ang_speed"]) else float("nan")
+        rows.append(
+            {
+                "time": float(t),
+                "x": float(pos[idx, 0]),
+                "y": float(pos[idx, 1]),
+                "z": float(pos[idx, 2]),
+                "speed": float(spd),
+                "angular_speed": float(ang),
+            }
+        )
+    return rows
 
 
 def create_app(cfg):
@@ -257,6 +298,9 @@ def create_app(cfg):
     default_gid = groups[0] if groups else None
 
     app = Dash(__name__)
+    times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
+    t_min, t_max = float(times_ref[0]), float(times_ref[-1])
+
     app.layout = html.Div(
         [
             html.H2("Interactive Trajectory Viewer"),
@@ -266,10 +310,37 @@ def create_app(cfg):
                 id="entity-dropdown",
                 clearable=False,
             ),
+            dcc.RangeSlider(
+                id="time-range",
+                min=t_min,
+                max=t_max,
+                step=max((t_max - t_min) / 200, 0.001),
+                value=[t_min, t_max],
+                allowCross=False,
+                tooltip={"placement": "bottom"},
+            ),
+            html.Button("Play", id="play-btn", n_clicks=0),
+            dcc.Interval(id="play-int", interval=500, disabled=True),
             dcc.Graph(id="traj3d"),
             dcc.Graph(id="traj2d"),
             dcc.Graph(id="speed"),
             dcc.Graph(id="angular"),
+            dash_table.DataTable(
+                id="raw-table",
+                columns=[
+                    {"name": n, "id": n}
+                    for n in ["time", "x", "y", "z", "speed", "angular_speed"]
+                ],
+                page_size=10,
+            ),
+            html.H3("Edit configuration"),
+            dcc.Textarea(
+                id="config-editor",
+                value=cfg.as_yaml(),
+                style={"width": "100%", "height": "200px"},
+            ),
+            html.Button("Save Config", id="save-config"),
+            html.Div(id="save-status"),
             html.Pre(id="info", children="Click a point on either plot"),
         ]
     )
@@ -279,22 +350,30 @@ def create_app(cfg):
         Output("traj2d", "figure"),
         Output("speed", "figure"),
         Output("angular", "figure"),
+        Output("raw-table", "data"),
         Input("entity-dropdown", "value"),
+        Input("time-range", "value"),
     )
-    def _update_plots(selected_id):
+    def _update_plots(selected_id, t_range):
         empty = go.Figure()
         if not selected_id:
-            return empty, empty, empty, empty
+            return empty, empty, empty, empty, []
         d = data[selected_id]
-        return _make_figures(
-            d["pos"],
-            d["times"],
-            d["markers"],
-            d["speed"],
-            d["t_speed"],
-            d["ang_speed"],
-            d["t_ang_speed"],
+        start, end = t_range or [d["times"][0], d["times"][-1]]
+        sl = _slice_range(d["times"], start, end)
+        sl_v = _slice_range(d["t_speed"], start, end)
+        sl_a = _slice_range(d["t_ang_speed"], start, end)
+        figs = _make_figures(
+            d["pos"][sl],
+            d["times"][sl],
+            [m - sl.start for m in d["markers"] if sl.start <= m < sl.stop],
+            d["speed"][sl_v],
+            d["t_speed"][sl_v],
+            d["ang_speed"][sl_a],
+            d["t_ang_speed"][sl_a],
         )
+        table = _build_table(d, start, end)
+        return (*figs, table)
 
     @app.callback(
         Output("info", "children"),
@@ -321,6 +400,49 @@ def create_app(cfg):
             f"Speed: {spd:.3f}\nAngular Speed: {ang_spd:.3f}\n"
             f"Wx: {ang_vec[0]:.3f}\nWy: {ang_vec[1]:.3f}\nWz: {ang_vec[2]:.3f}"
         )
+
+    @app.callback(
+        Output("play-int", "disabled"),
+        Output("play-btn", "children"),
+        Input("play-btn", "n_clicks"),
+        State("play-int", "disabled"),
+        prevent_initial_call=True,
+    )
+    def _toggle_play(n, disabled):
+        disabled = not disabled
+        return disabled, ("Play" if disabled else "Pause")
+
+    @app.callback(
+        Output("time-range", "value"),
+        Input("play-int", "n_intervals"),
+        State("time-range", "value"),
+        State("time-range", "max"),
+    )
+    def _advance(_, val, maximum):
+        start, end = val
+        step = max((maximum - start) / 200, 0.001)
+        if end + step > maximum:
+            return [start, maximum]
+        return [start + step, end + step]
+
+    @app.callback(
+        Output("save-status", "children"),
+        Input("save-config", "n_clicks"),
+        State("config-editor", "value"),
+        prevent_initial_call=True,
+    )
+    def _save_config(_, text):
+        try:
+            cfg.update_from_yaml(text)
+        except Exception as exc:  # noqa: BLE001
+            return f"Invalid YAML: {exc}"
+        out_dir = cfg.get("output", "output_dir")
+        os.makedirs(out_dir, exist_ok=True)
+        name = f"web_saved_{datetime.now().strftime('%Y%m%d_%H%M%S')}.yaml"
+        path = os.path.join(out_dir, name)
+        with open(path, "w") as f:
+            f.write(cfg.as_yaml())
+        return f"Saved to {path}"
 
     return app
 
