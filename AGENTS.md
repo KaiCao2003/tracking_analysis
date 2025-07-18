@@ -10,3 +10,4 @@ This repository contains utilities for analyzing tracking CSV files.
 
 
 IGNORE output1.csv if exists. That's a internal testing file shouldn't be uploaded. 
+* Do not modify the `tracking_analysis` package; make changes only within `interactive_app`.
