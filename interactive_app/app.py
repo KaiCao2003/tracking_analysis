@@ -50,25 +50,41 @@ def create_app(cfg: Config) -> Dash:
             html.Div(id="status-bar", children="Ready"),
             html.Div(
                 [
-                    dcc.Graph(id="traj3d", style={"flex": "1 1 48%", "minWidth": "400px", "height": "400px"}),
-                    dcc.Graph(id="traj2d", style={"flex": "1 1 48%", "minWidth": "400px", "height": "400px"}),
+                    dcc.Graph(id="traj3d", style={"width": "480px", "height": "480px"}),
+                    dcc.Graph(id="traj2d", style={"width": "480px", "height": "480px"}),
+
                 ],
-                style={"display": "flex", "flexWrap": "wrap"},
+                style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
             html.Div(
                 [
-                    dcc.Graph(id="speed", style={"flex": "1 1 48%", "minWidth": "400px", "height": "300px"}),
-                    dcc.Graph(id="angular", style={"flex": "1 1 48%", "minWidth": "400px", "height": "300px"}),
+                    dcc.Graph(id="speed", style={"width": "480px", "height": "300px"}),
+                    dcc.Graph(
+                        id="angular", style={"width": "480px", "height": "300px"}
+                    ),
+
                 ],
-                style={"display": "flex", "flexWrap": "wrap"},
+                style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
-            dash_table.DataTable(
-                id="raw-table",
-                columns=[{"name": n, "id": n} for n in ["time", "x", "y", "z", "speed", "angular_speed"]],
-                page_size=10,
+            html.Button("Show Table", id="toggle-table", n_clicks=0),
+            html.Div(
+                dash_table.DataTable(
+                    id="raw-table",
+                    columns=[
+                        {"name": n, "id": n}
+                        for n in ["time", "x", "y", "z", "speed", "angular_speed"]
+                    ],
+                    page_size=10,
+                ),
+                id="table-container",
+                style={"display": "none"},
             ),
             html.H3("Edit configuration"),
-            dcc.Textarea(id="config-editor", value=cfg.as_yaml(), style={"width": "100%", "height": "200px"}),
+            dcc.Textarea(
+                id="config-editor",
+                value=cfg.as_yaml(),
+                style={"width": "100%", "height": "200px"},
+            ),
             html.Button("Save Config", id="save-config"),
             html.Div(id="save-status"),
             html.Pre(id="info", children="Hover or click on any plot for details"),
@@ -136,17 +152,13 @@ def create_app(cfg: Config) -> Dash:
         Output("play-int", "disabled"),
         Output("play-btn", "children"),
 
-        # Output("status-bar", "children"),
-
         Input("play-btn", "n_clicks"),
         State("play-int", "disabled"),
         prevent_initial_call=True,
     )
     def _toggle_play(n, disabled):
         disabled = not disabled
-
-        # status = "Playing" if not disabled else "Paused"
-        return disabled, ("Play" if disabled else "Pause")  # , status
+        return disabled, ("Play" if disabled else "Pause")
 
 
     @app.callback(
@@ -177,6 +189,17 @@ def create_app(cfg: Config) -> Dash:
         raise PreventUpdate
 
     @app.callback(
+        Output("table-container", "style"),
+        Input("toggle-table", "n_clicks"),
+        State("table-container", "style"),
+        prevent_initial_call=True,
+    )
+    def _toggle_table(n, style):
+        disp = style.get("display", "block")
+        return {"display": "none" if disp != "none" else "block"}
+
+    @app.callback(
+
         Output("save-status", "children"),
         Input("save-config", "n_clicks"),
         State("config-editor", "value"),
