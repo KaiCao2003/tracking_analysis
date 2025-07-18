@@ -36,36 +36,32 @@ def create_app(cfg: Config) -> Dash:
                 id="entity-dropdown",
                 clearable=False,
             ),
-            dcc.RangeSlider(
-                id="time-range",
-                min=t_min,
-                max=t_max,
-                step=slider_step,
-                value=[t_min, t_max],
-                allowCross=False,
-                tooltip={"placement": "bottom"},
-            ),
-            html.Button("Play", id="play-btn", n_clicks=0),
-            dcc.Interval(id="play-int", interval=1000, disabled=True),
-            html.Div(id="status-bar", children="Ready"),
             html.Div(
                 [
-                    dcc.Graph(id="traj3d", style={"width": "100%", "height": "600px"}),
-                    dcc.Graph(id="traj2d", style={"width": "100%", "height": "600px"}),
-
-                ],
-                style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
-            ),
-            html.Div(
-                [
-                    dcc.Graph(id="speed", style={"width": "100%", "height": "400px"}),
-                    dcc.Graph(
-                        id="angular", style={"width": "100%", "height": "400px"}
+                    dcc.RangeSlider(
+                        id="time-range",
+                        min=t_min,
+                        max=t_max,
+                        step=slider_step,
+                        value=[t_min, t_max],
+                        allowCross=False,
+                        tooltip={"placement": "bottom"},
                     ),
-
+                    html.Button("Play", id="play-btn", n_clicks=0),
+                    dcc.Interval(id="play-int", interval=1000, disabled=True),
+                    html.Div(id="status-bar", children="Ready"),
+                ],
+                style={"display": "flex", "gap": "10px", "alignItems": "center"},
+            ),
+            html.Div(
+                [
+                    dcc.Graph(id="traj3d", style={"flex": "1", "height": "600px"}),
+                    dcc.Graph(id="traj2d", style={"flex": "1", "height": "600px"}),
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
+            dcc.Graph(id="speed", style={"width": "100%", "height": "400px"}),
+            dcc.Graph(id="angular", style={"width": "100%", "height": "400px"}),
             html.Button("Show Table", id="toggle-table", n_clicks=0),
             html.Div(
                 dash_table.DataTable(
