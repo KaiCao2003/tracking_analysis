@@ -50,8 +50,8 @@ def create_app(cfg: Config) -> Dash:
             html.Div(id="status-bar", children="Ready"),
             html.Div(
                 [
-                    dcc.Graph(id="traj3d", style={"width": "100%", "height": "600px"}),
-                    dcc.Graph(id="traj2d", style={"width": "100%", "height": "600px"}),
+                    dcc.Graph(id="traj3d", style={"width": "50%", "height": "600px"}),
+                    dcc.Graph(id="traj2d", style={"width": "50%", "height": "600px"}),
 
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
