@@ -47,19 +47,18 @@ def create_app(cfg: Config) -> Dash:
             ),
             html.Button("Play", id="play-btn", n_clicks=0),
             dcc.Interval(id="play-int", interval=1000, disabled=True),
-            dcc.Store(id="highlight-time"),
             html.Div(id="status-bar", children="Ready"),
             html.Div(
                 [
-                    dcc.Loading(dcc.Graph(id="traj3d", style={"flex": "1 1 45%", "minWidth": "300px"})),
-                    dcc.Loading(dcc.Graph(id="traj2d", style={"flex": "1 1 45%", "minWidth": "300px"})),
+                    dcc.Graph(id="traj3d", style={"flex": "1 1 48%", "minWidth": "400px", "height": "400px"}),
+                    dcc.Graph(id="traj2d", style={"flex": "1 1 48%", "minWidth": "400px", "height": "400px"}),
                 ],
                 style={"display": "flex", "flexWrap": "wrap"},
             ),
             html.Div(
                 [
-                    dcc.Loading(dcc.Graph(id="speed", style={"flex": "1 1 45%", "minWidth": "300px"})),
-                    dcc.Loading(dcc.Graph(id="angular", style={"flex": "1 1 45%", "minWidth": "300px"})),
+                    dcc.Graph(id="speed", style={"flex": "1 1 48%", "minWidth": "400px", "height": "300px"}),
+                    dcc.Graph(id="angular", style={"flex": "1 1 48%", "minWidth": "400px", "height": "300px"}),
                 ],
                 style={"display": "flex", "flexWrap": "wrap"},
             ),
@@ -72,7 +71,7 @@ def create_app(cfg: Config) -> Dash:
             dcc.Textarea(id="config-editor", value=cfg.as_yaml(), style={"width": "100%", "height": "200px"}),
             html.Button("Save Config", id="save-config"),
             html.Div(id="save-status"),
-            html.Pre(id="info", children="Hover on any plot to highlight; click for details"),
+            html.Pre(id="info", children="Hover or click on any plot for details"),
         ]
     )
 
@@ -85,9 +84,8 @@ def create_app(cfg: Config) -> Dash:
         Output("status-bar", "children"),
         Input("entity-dropdown", "value"),
         Input("time-range", "value"),
-        Input("highlight-time", "data"),
     )
-    def _update_plots(selected_id, t_range, highlight):
+    def _update_plots(selected_id, t_range):
         if not selected_id:
             empty = go.Figure()
             return empty, empty, empty, empty, [], "No data"
@@ -104,7 +102,6 @@ def create_app(cfg: Config) -> Dash:
             d["t_speed"][sl_v],
             d["ang_speed"][sl_a],
             d["t_ang_speed"][sl_a],
-            highlight,
         )
         table = build_table(d, start, end)
         return (*figs, table, "Updated")
@@ -138,15 +135,13 @@ def create_app(cfg: Config) -> Dash:
     @app.callback(
         Output("play-int", "disabled"),
         Output("play-btn", "children"),
-        Output("status-bar", "children"),
         Input("play-btn", "n_clicks"),
         State("play-int", "disabled"),
         prevent_initial_call=True,
     )
     def _toggle_play(n, disabled):
         disabled = not disabled
-        status = "Playing" if not disabled else "Paused"
-        return disabled, ("Play" if disabled else "Pause"), status
+        return disabled, ("Play" if disabled else "Pause")
 
     @app.callback(
         Output("time-range", "value"),
@@ -174,26 +169,6 @@ def create_app(cfg: Config) -> Dash:
         if "xaxis.range[0]" in r and "xaxis.range[1]" in r:
             return [float(r["xaxis.range[0]"]), float(r["xaxis.range[1]"])]
         raise PreventUpdate
-
-    @app.callback(
-        Output("highlight-time", "data"),
-        Input("traj3d", "hoverData"),
-        Input("traj2d", "hoverData"),
-        Input("speed", "hoverData"),
-        Input("angular", "hoverData"),
-        prevent_initial_call=True,
-    )
-    def _update_highlight(h3d, h2d, hs, ha):
-        for hov in (h3d, h2d, hs, ha):
-            if hov and hov.get("points"):
-                p = hov["points"][0]
-                if "customdata" in p:
-                    return float(p["customdata"])
-                if "x" in p:
-                    return float(p["x"])
-        raise PreventUpdate
-
-
 
     @app.callback(
         Output("save-status", "children"),
