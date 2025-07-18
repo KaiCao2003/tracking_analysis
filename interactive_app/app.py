@@ -50,16 +50,21 @@ def create_app(cfg: Config) -> Dash:
                     html.Button("Play", id="play-btn", n_clicks=0),
                     dcc.Interval(id="play-int", interval=1000, disabled=True),
                     html.Div(id="status-bar", children="Ready"),
+
+                  
                 ],
                 style={"display": "flex", "gap": "10px", "alignItems": "center"},
             ),
             html.Div(
                 [
                     dcc.Graph(id="traj3d", style={"flex": "1", "height": "600px"}),
-                    dcc.Graph(
+
+                  dcc.Graph(
                         id="traj2d",
                         style={"flex": "1", "height": "600px", "width": "600px"},
                     ),
+
+                  
                 ],
                 style={"display": "flex", "gap": "20px", "flexWrap": "wrap"},
             ),
@@ -158,6 +163,7 @@ def create_app(cfg: Config) -> Dash:
             p = d["pos"][idx]
             return (
                 f"Frame: {int(frame)}\n"
+
                 f"Time: {t:.3f}s\n"
                 f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}"
             )
@@ -170,6 +176,7 @@ def create_app(cfg: Config) -> Dash:
             frame = d["frames_speed"][idx]
             spd = click_speed["points"][0]["y"]
             return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nSpeed: {float(spd):.3f}"
+
 
         if trigger == "angular":
             if not click_ang:
