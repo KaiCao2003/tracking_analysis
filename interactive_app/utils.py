@@ -184,7 +184,6 @@ def make_figures(
     t_speed: np.ndarray,
     ang_speed: np.ndarray,
     t_ang_speed: np.ndarray,
-    highlight: float | None = None,
 ) -> Tuple[go.Figure, go.Figure, go.Figure, go.Figure]:
     """Create the 3D/2D trajectory and speed plots."""
     fig3d = go.Figure()
@@ -211,19 +210,6 @@ def make_figures(
                 showlegend=False,
             )
         )
-    if highlight is not None:
-        hi = int(np.searchsorted(times, highlight, side="left"))
-        if 0 <= hi < len(times):
-            fig3d.add_trace(
-                go.Scatter3d(
-                    x=[pos[hi, 0]],
-                    y=[pos[hi, 1]],
-                    z=[pos[hi, 2]],
-                    mode="markers",
-                    marker=dict(color="orange", size=4, symbol="diamond"),
-                    showlegend=False,
-                )
-            )
 
     fig3d.update_layout(
         margin=dict(l=0, r=0, b=0, t=30),
@@ -252,18 +238,6 @@ def make_figures(
                 showlegend=False,
             )
         )
-    if highlight is not None:
-        hi = int(np.searchsorted(times, highlight, side="left"))
-        if 0 <= hi < len(times):
-            fig2d.add_trace(
-                go.Scatter(
-                    x=[pos[hi, 0]],
-                    y=[pos[hi, 1]],
-                    mode="markers",
-                    marker=dict(color="orange", size=6, symbol="diamond"),
-                    showlegend=False,
-                )
-            )
     fig2d.update_layout(xaxis_title="X", yaxis_title="Y", title="2D Trajectory")
 
     fig_speed = go.Figure()
@@ -273,8 +247,6 @@ def make_figures(
     for tm in markers:
         if tm < len(times):
             fig_speed.add_vline(x=times[tm], line_color="orange", line_dash="dash")
-    if highlight is not None:
-        fig_speed.add_vline(x=highlight, line_color="orange", line_dash="dash")
     fig_speed.update_layout(
         xaxis_title="Time (s)",
         yaxis_title="Linear Speed",
@@ -288,8 +260,6 @@ def make_figures(
     for tm in markers:
         if tm < len(times):
             fig_ang.add_vline(x=times[tm], line_color="orange", line_dash="dash")
-    if highlight is not None:
-        fig_ang.add_vline(x=highlight, line_color="orange", line_dash="dash")
     fig_ang.update_layout(
         xaxis_title="Time (s)",
         yaxis_title="Angular Speed",
