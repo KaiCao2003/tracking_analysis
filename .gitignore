@@ -1,4 +1,5 @@
 # Ignore analysis results and caches
 results/
-output1.csv
 __pycache__/
+/data/
+.idea
