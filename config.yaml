@@ -66,3 +66,7 @@ preprocess:
   enable: false
   output_file: "./results/trimmed.csv"
   summary_file: "./results/summary.txt"
+
+# Settings for the interactive web application
+webapp:
+  port: 3010

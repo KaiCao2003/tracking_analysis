@@ -115,3 +115,39 @@ def compute_angular_speed(rot, times, smoothing=False, window=5, polyorder=2):
     ang_speed = angle / dt
     t_mid = times[:-1] + dt/2
     return ang_speed, t_mid
+
+
+def compute_angular_velocity(rot, times, smoothing=False, window=5, polyorder=2):
+    """Compute per-axis angular velocity from orientation data.
+
+    Parameters
+    ----------
+    rot : ndarray
+        ``(N,4)`` quaternions ``(x,y,z,w)`` or ``(N,3)`` Euler angles in degrees
+        interpreted as ``(x,y,z)`` rotations.
+    times : ndarray
+        Time values corresponding to each orientation sample.
+
+    Returns
+    -------
+    ang_vel : ndarray
+        Angular velocity in radians/second for ``x``, ``y`` and ``z`` axes.
+        Shape is ``(N-1, 3)``.
+    t_mid : ndarray
+        Midpoint times associated with each velocity sample.
+    """
+
+    if rot.shape[1] == 4:
+        angles = R.from_quat(rot).as_euler("xyz", degrees=True)
+    else:
+        angles = rot
+
+    angles = unwrap_deg(angles, axis=0)
+    if smoothing:
+        angles = _smooth(angles, window, polyorder)
+
+    dt = np.diff(times)
+    dangles = np.diff(angles, axis=0)
+    ang_vel = np.deg2rad(dangles) / dt[:, None]
+    t_mid = times[:-1] + dt / 2
+    return ang_vel, t_mid

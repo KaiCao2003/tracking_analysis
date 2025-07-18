@@ -52,5 +52,19 @@ You can also run the trimming step manually:
 python -m tracking_analysis.trim <input.csv> [output.csv] --summary summary.txt
 ```
 
+## Interactive Web Application
+
+An interactive Dash web app is provided for exploring trajectories. It loads the
+same configuration file and visualizes the data in 2D and 3D. Clicking a point
+reveals the exact time, position, linear speed and angular velocities.
+
+Run the server:
+
+```bash
+python -m interactive_app.app --config config.yaml
+```
+
+The app listens on the port specified by `webapp.port` (default `3010`).
+
 
 
