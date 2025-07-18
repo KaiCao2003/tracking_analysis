@@ -11,14 +11,16 @@ interval:
 
 # Extra time markers in seconds to draw on plots
 # Use null for no markers
-time_markers: [10, 200]
+time_markers:
+  null
+#  [10, 200]
 
 # List of IDs (rigid-body base names) to analyze; empty = all
 groups: [H1]
 
 # Kinematics (smoothing) options
 kinematics:
-  smoothing: true
+  smoothing: false
   smoothing_window: 10
   smoothing_polyorder: 2
   smoothing_method: savgol
