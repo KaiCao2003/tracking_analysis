@@ -1,17 +1,99 @@
-"""Generate SVG plots comparing different filters on a synthetic signal."""
+"""Generate SVG plots comparing different filters on a signal from the CSV."""
+
 
 from __future__ import annotations
 
 import argparse
 import os
 from datetime import datetime
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Tuple
 
 import numpy as np
 from scipy.signal import butter, filtfilt, savgol_filter, lfilter, firwin
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from tracking_analysis.config import Config
+from tracking_analysis.reader import load_data, preprocess_csv
+from tracking_analysis.grouping import group_entities
+from tracking_analysis.kinematics import compute_linear_velocity
+
+
+def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
+    """Load a 1-D signal from the configured CSV.
+
+    Returns (times, signal, fs).
+    """
+    in_path = cfg.get("input_file")
+    pre_cfg = cfg.get("preprocess") or {}
+    data_path = in_path
+    if pre_cfg.get("enable"):
+        out_file = pre_cfg.get(
+            "output_file",
+            os.path.join(cfg.get("output", "output_dir"), "trimmed.csv"),
+        )
+        summary = pre_cfg.get(
+            "summary_file",
+            os.path.join(cfg.get("output", "output_dir"), "summary.txt"),
+        )
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        os.makedirs(os.path.dirname(summary), exist_ok=True)
+        preprocess_csv(in_path, out_file, summary)
+        data_path = out_file
+
+    try:
+        df, frame_col, time_col = load_data(data_path)
+    except Exception:
+        df = pd.read_csv(data_path, skiprows=[0, 1, 2, 5], header=[0, 1, 2, 3])
+        frame_col = next(c for c in df.columns if c[3] == "Frame")
+        time_col = next(c for c in df.columns if c[3] == "Time (Seconds)")
+
+    groups = group_entities(df)
+    group = cfg.get("filter_test", "group")
+    if not group or group not in groups:
+        group = next(iter(groups)) if groups else None
+    if group is None:
+        raise RuntimeError("No valid group found in data")
+
+    src = cfg.get("filter_test", "source", default="speed").lower()
+
+    start = cfg.get(
+        "filter_test",
+        "start_time",
+        default=cfg.get("interval", "start_time", default=0.0),
+    )
+    end = cfg.get(
+        "filter_test",
+        "end_time",
+        default=cfg.get("interval", "end_time", default=float("inf")),
+    )
+
+    times_all = df[time_col].values
+    i0 = int(np.searchsorted(times_all, start, side="left"))
+    if end == float("inf"):
+        i1 = len(times_all)
+    else:
+        i1 = int(np.searchsorted(times_all, end, side="right"))
+
+    ent_df = df.xs(group, level=0, axis=1)
+    pos = (
+        ent_df.xs("Position", level=1, axis=1)
+        .droplevel(0, axis=1)[["X", "Y", "Z"]]
+        .values
+    )[i0:i1]
+    times = times_all[i0:i1]
+
+    if src == "speed":
+        signal, t = compute_linear_velocity(pos, times)
+    else:
+        comp = {"position_x": 0, "position_y": 1, "position_z": 2}.get(src)
+        if comp is None:
+            raise ValueError(f"Unknown source '{src}'")
+        signal = pos[:, comp]
+        t = times
+
+    fs = 1.0 / float(np.mean(np.diff(t))) if len(t) > 1 else 1.0
+    return t, signal, fs
 
 
 def _apply_filters(signal: np.ndarray, fs: float, filters: Iterable[dict]) -> Dict[str, np.ndarray]:
@@ -38,7 +120,12 @@ def _apply_filters(signal: np.ndarray, fs: float, filters: Iterable[dict]) -> Di
             nyq = 0.5 * fs
             norm_cutoff = min(cutoff_hz / nyq, 0.99)
             b, a = butter(order, norm_cutoff, btype="low")
-            filt = filtfilt(b, a, signal)
+            padlen = 3 * max(len(a), len(b))
+            if len(signal) <= padlen:
+                filt = lfilter(b, a, signal)
+            else:
+                filt = filtfilt(b, a, signal)
+
         elif ftype == "savgol":
             window = int(cfg.get("window", 5))
             if window % 2 == 0:
@@ -66,16 +153,11 @@ def main() -> None:
         print("filter_test.enable is not set")
         return
 
-    duration = float(cfg.get("filter_test", "duration", default=5.0))
-    sample_rate = float(cfg.get("filter_test", "sample_rate", default=100.0))
-    freq = float(cfg.get("filter_test", "signal_freq", default=1.0))
-    noise = float(cfg.get("filter_test", "noise_level", default=0.2))
-
-    t = np.arange(0.0, duration, 1.0 / sample_rate)
-    base = np.sin(2 * np.pi * freq * t) + noise * np.random.randn(len(t))
+    t, base, fs = _load_signal(cfg)
 
     filters = cfg.get("filter_test", "filters", default=[]) or []
-    results = _apply_filters(base, sample_rate, filters)
+    results = _apply_filters(base, fs, filters)
+
 
     out_dir = cfg.get("output", "output_dir")
     os.makedirs(out_dir, exist_ok=True)
