@@ -16,7 +16,7 @@ import pandas as pd
 from tracking_analysis.config import Config
 from tracking_analysis.reader import load_data, preprocess_csv
 from tracking_analysis.grouping import group_entities
-from tracking_analysis.kinematics import compute_linear_velocity
+from tracking_analysis.kinematics import compute_linear_velocity, compute_angular_speed
 
 
 def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
@@ -85,6 +85,15 @@ def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
 
     if src == "speed":
         signal, t = compute_linear_velocity(pos, times)
+    elif src == "angular_speed":
+        if "Rotation" not in ent_df.columns.get_level_values(1):
+            raise ValueError("No rotation data available for angular speed")
+        rot = (
+                  ent_df.xs("Rotation", level=1, axis=1)
+                  .droplevel(0, axis=1)[["X", "Y", "Z", "W"]]
+                  .values
+              )[i0:i1]
+        signal, t = compute_angular_speed(rot, times)
     else:
         comp = {"position_x": 0, "position_y": 1, "position_z": 2}.get(src)
         if comp is None:
@@ -165,7 +174,7 @@ def main() -> None:
     plot_dir = os.path.join(out_dir, f"filter_test_{stamp}")
     os.makedirs(plot_dir, exist_ok=True)
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(20, 12))
     plt.plot(t, base, label="original")
     for name, arr in results.items():
         plt.plot(t, arr, label=name)
@@ -177,7 +186,7 @@ def main() -> None:
     plt.close()
 
     for name, arr in results.items():
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(18, 10))
         plt.plot(t, base, label="original", alpha=0.5)
         plt.plot(t, arr, label=name)
         plt.xlabel("Time (s)")

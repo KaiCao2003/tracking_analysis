@@ -6,8 +6,8 @@ input_file: "./data/output1.csv"
 
 # Time interval in seconds. Use null for end to cover entire file.
 interval:
-  start_time: 0
-  end_time: 100
+  start_time: 57
+  end_time: 65
 
 # Extra time markers in seconds to draw on plots
 # Use null for no markers
@@ -20,7 +20,7 @@ groups: [H1]
 
 # Kinematics (smoothing) options
 kinematics:
-  smoothing: true
+  smoothing: false
   smoothing_window: 10
   smoothing_polyorder: 2
   smoothing_method: savgol
@@ -77,12 +77,12 @@ webapp:
 filter_test:
   enable: true
   # optional: specify which rigid body to use; defaults to the first one
-  group: null
-  # choose data source: speed, position_x, position_y or position_z
-  source: speed
+  group: H1
+  # choose data source: angular_speed, position_x, position_y or position_z
+  source: angular_speed
   # time range for the test
-  start_time: 0
-  end_time: null
+  start_time: 57
+  end_time: 65
 
 
   filters:
