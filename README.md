@@ -74,3 +74,31 @@ The app listens on the port specified by `webapp.port` (default `3010`).
 
 
 
+
+## Filter Comparison Utility
+
+The `interactive_app.filter_compare` script loads the CSV defined by
+`input_file`, extracts a one‑dimensional signal and saves SVG plots for the
+configured filters.
+The signal source, time interval and filters are controlled by the
+`filter_test` section in `config.yaml`, for example:
+
+```yaml
+filter_test:
+  enable: true
+  group: null       # use first group
+  source: speed     # or position_x/position_y/position_z
+  start_time: 0
+  end_time: null
+  filters:
+    - type: moving_average
+      window: 5
+```
+
+Run the tool with:
+
+```bash
+python -m interactive_app.filter_compare --config config.yaml
+```
+
+Generated figures are stored under the `results/` directory.

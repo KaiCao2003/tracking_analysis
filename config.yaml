@@ -1,7 +1,6 @@
 # Path to the input CSV (absolute or relative)
+input_file: "./data/input.csv"
 
-#input_file: "./data/input.csv"
-input_file: "./data/output1.csv"
 
 
 # Time interval in seconds. Use null for end to cover entire file.
@@ -72,3 +71,28 @@ preprocess:
 # Settings for the interactive web application
 webapp:
   port: 3010
+
+# Settings for filter comparison utility
+filter_test:
+  enable: true
+  # optional: specify which rigid body to use; defaults to the first one
+  group: null
+  # choose data source: speed, position_x, position_y or position_z
+  source: speed
+  # time range for the test
+  start_time: 0
+  end_time: null
+  filters:
+    - type: moving_average
+      window: 5
+    - type: ema
+      alpha: 0.3
+    - type: butterworth
+      order: 2
+      cutoff: 2.0
+    - type: savgol
+      window: 7
+      polyorder: 2
+    - type: fir
+      numtaps: 21
+      cutoff: 2.0
