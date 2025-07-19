@@ -74,3 +74,15 @@ The app listens on the port specified by `webapp.port` (default `3010`).
 
 
 
+
+## Filter Comparison Utility
+
+The `interactive_app.filter_compare` script applies several filters to a chosen signal and saves SVG plots.
+Configure the `filter_test` section in `config.yaml` to enable it and define the filters.
+Run the tool with:
+
+```bash
+python -m interactive_app.filter_compare --config config.yaml
+```
+
+Generated figures are stored under the `results/` directory.

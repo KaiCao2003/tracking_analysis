@@ -1,7 +1,6 @@
 # Path to the input CSV (absolute or relative)
-
-#input_file: "./data/input.csv"
 input_file: "./data/output1.csv"
+
 
 
 # Time interval in seconds. Use null for end to cover entire file.
@@ -72,3 +71,25 @@ preprocess:
 # Settings for the interactive web application
 webapp:
   port: 3010
+
+# Settings for filter comparison utility
+filter_test:
+  enable: true
+  duration: 5
+  sample_rate: 100
+  signal_freq: 1.0
+  noise_level: 0.2
+  filters:
+    - type: moving_average
+      window: 5
+    - type: ema
+      alpha: 0.3
+    - type: butterworth
+      order: 2
+      cutoff: 2.0
+    - type: savgol
+      window: 7
+      polyorder: 2
+    - type: fir
+      numtaps: 21
+      cutoff: 2.0
