@@ -1,5 +1,6 @@
 """Generate SVG plots comparing different filters on a signal from the CSV."""
 
+
 from __future__ import annotations
 
 import argparse
@@ -124,6 +125,7 @@ def _apply_filters(signal: np.ndarray, fs: float, filters: Iterable[dict]) -> Di
                 filt = lfilter(b, a, signal)
             else:
                 filt = filtfilt(b, a, signal)
+
         elif ftype == "savgol":
             window = int(cfg.get("window", 5))
             if window % 2 == 0:
@@ -155,6 +157,7 @@ def main() -> None:
 
     filters = cfg.get("filter_test", "filters", default=[]) or []
     results = _apply_filters(base, fs, filters)
+
 
     out_dir = cfg.get("output", "output_dir")
     os.makedirs(out_dir, exist_ok=True)
