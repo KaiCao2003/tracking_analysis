@@ -181,8 +181,19 @@ def create_app(cfg: Config) -> Dash:
                         },
                     )
                 ],
-                open=False,
-                style={"margin": "20px 0"},
+                id="config-modal",
+                style={
+                    "display": "none",
+                    "position": "fixed",
+                    "top": "0",
+                    "left": "0",
+                    "width": "100%",
+                    "height": "100%",
+                    "background": "rgba(0,0,0,0.4)",
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                    "zIndex": "1000",
+                },
             ),
             html.Pre(id="info", children="Hover or click on any plot for details"),
             dcc.Store(id="selected-time"),
@@ -232,54 +243,7 @@ def create_app(cfg: Config) -> Dash:
         table = build_table(d, start, end)
         return (*figs, table, "Updated")
 
-    # Old info callback kept for reference
-    # @app.callback(
-    #     Output("info", "children"),
-    #     Output("selected-time", "data", allow_duplicate=True),
-    #     Input("traj3d", "clickData"),
-    #     Input("traj2d", "clickData"),
-    #     Input("speed", "clickData"),
-    #     Input("angular", "clickData"),
-    #     State("entity-dropdown", "value"),
-    #     prevent_initial_call=True,
-    # )
-    # def _display_info(click3d, click2d, click_speed, click_ang, selected_id):
-    #     ctx = callback_context
-    #     if not selected_id or not ctx.triggered:
-    #         return "Hover or click on any plot", dash.no_update
-    #     trigger = ctx.triggered_id
-    #     d = data[selected_id]
-    #     if trigger in {"traj3d", "traj2d"}:
-    #         click = click3d if trigger == "traj3d" else click2d
-    #         if not click:
-    #             raise PreventUpdate
-    #         idx = click["points"][0]["pointIndex"]
-    #         t = d["times"][idx]
-    #         frame = d["frames"][idx]
-    #         p = d["pos"][idx]
-    #         info = (
-    #             f"Frame: {int(frame)}\n"
-    #             f"Time: {t:.3f}s\n"
-    #             f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}"
-    #         )
-    #         return info, float(t)
-    #     if trigger == "speed":
-    #         if not click_speed:
-    #             raise PreventUpdate
-    #         idx = click_speed["points"][0]["pointIndex"]
-    #         t = d["t_speed"][idx]
-    #         frame = d["frames_speed"][idx]
-    #         spd = click_speed["points"][0]["y"]
-    #         return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nSpeed: {float(spd):.3f}", float(t)
-    #     if trigger == "angular":
-    #         if not click_ang:
-    #             raise PreventUpdate
-    #         idx = click_ang["points"][0]["pointIndex"]
-    #         t = d["t_ang_speed"][idx]
-    #         frame = d["frames_ang"][idx]
-    #         ang = click_ang["points"][0]["y"]
-    #         return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nAngular Speed: {float(ang):.3f}", float(t)
-    #     raise PreventUpdate
+
 
     @app.callback(
         Output("play-int", "disabled"),
@@ -329,6 +293,7 @@ def create_app(cfg: Config) -> Dash:
             x1 = rdata["xaxis.range[1]"]
         else:
             raise PreventUpdate
+
         return [float(x0), float(x1)], float(x0)
 
     @app.callback(
@@ -396,32 +361,6 @@ def create_app(cfg: Config) -> Dash:
             info, t_val = res
         return info, t_val
 
-    # Deprecated hover callback kept for reference
-    # @app.callback(
-    #     Output("selected-time", "data", allow_duplicate=True),
-    #     Input("traj3d", "hoverData"),
-    #     Input("traj2d", "hoverData"),
-    #     Input("speed", "hoverData"),
-    #     Input("angular", "hoverData"),
-    #     State("entity-dropdown", "value"),
-    #     prevent_initial_call=True,
-    # )
-    # def _hover_time(h3d, h2d, hs, ha, gid):
-    #     if not gid:
-    #         raise PreventUpdate
-    #     trigger = callback_context.triggered_id
-    #     d = data[gid]
-    #     if trigger == "traj3d" and h3d:
-    #         idx = h3d["points"][0]["pointIndex"]
-    #         return float(d["times"][idx])
-    #     if trigger == "traj2d" and h2d:
-    #         idx = h2d["points"][0]["pointIndex"]
-    #         return float(d["times"][idx])
-    #     if trigger == "speed" and hs:
-    #         return float(hs["points"][0]["x"])
-    #     if trigger == "angular" and ha:
-    #         return float(ha["points"][0]["x"])
-    #     raise PreventUpdate
 
     @app.callback(
         Output("config-modal", "style"),
@@ -465,68 +404,7 @@ def create_app(cfg: Config) -> Dash:
             raise PreventUpdate
         return val[0] if val else None
 
-    # Legacy YAML editor callback retained for reference
-    # @app.callback(
-    #     Output("entity-dropdown", "options"),
-    #     Output("entity-dropdown", "value"),
-    #     Output("time-range", "min"),
-    #     Output("time-range", "max"),
-    #     Output("time-range", "step"),
-    #     Output("time-range", "value", allow_duplicate=True),
-    #     Output("filter-dropdown", "options"),
-    #     Output("config-editor", "value"),
-    #     Output("selected-time", "data", allow_duplicate=True),
-    #     Output("save-status", "children"),
-    #     Input("save-config", "n_clicks"),
-    #     State("config-editor", "value"),
-    #     prevent_initial_call=True,
-    # )
-    # def _save_config(_, text):
-    #     nonlocal data, groups, filter_names
-    #     try:
-    #         cfg.update_from_yaml(text)
-    #     except Exception as exc:  # noqa: BLE001
-    #         return (
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             dash.no_update,
-    #             f"Invalid YAML: {exc}",
-    #         )
-    #     data, groups = prepare_data(cfg)
-    #     default_gid = groups[0] if groups else None
-    #     filters_cfg = cfg.get("filter_test", "filters", default=[]) or []
-    #     filter_names = ["base"] + [
-    #         f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)
-    #     ]
-    #     times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
-    #     t_min, t_max = float(times_ref[0]), float(times_ref[-1])
-    #     slider_step = round(max((t_max - t_min) / 50, 0.1), 1)
-    #     out_dir = cfg.get("output", "output_dir")
-    #     os.makedirs(out_dir, exist_ok=True)
-    #     name = f"web_saved_{datetime.now().strftime('%Y%m%d_%H%M%S')}.yaml"
-    #     path = os.path.join(out_dir, name)
-    #     with open(path, "w") as f:
-    #         f.write(cfg.as_yaml())
-    #     dropdown_opts = [{"label": g, "value": g} for g in groups]
-    #     filter_opts = [{"label": n, "value": n} for n in filter_names]
-    #     return (
-    #         dropdown_opts,
-    #         default_gid,
-    #         t_min,
-    #         t_max,
-    #         slider_step,
-    #         [t_min, t_max],
-    #         filter_opts,
-    #         cfg.as_yaml(),
-    #         None,
-    #         f"Saved to {path}",
-    #     )
+
 
     @app.callback(
         Output("entity-dropdown", "options"),
