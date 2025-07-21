@@ -62,9 +62,10 @@ lists every filter from `filter_test.filters`, matching the options available in
 `filter_compare`. Use the time-range slider to focus on a portion of the
 recording. The **Play** button replays the trajectory and marks the current time
 across all plots. Clicking a point on any graph highlights the same moment on
-the others using grey markers. A collapsible *Edit configuration* panel lets you
-modify `config.yaml` inside the browser. Saving the text reloads the data and
-updates all controls without restarting the server.
+the others using grey markers. A collapsible *Edit configuration* window lists
+every setting from `config.yaml` with simple form controls. Switches toggle
+boolean options and inputs update numeric or text values. Saving reloads the data
+without restarting the server.
 
 
 ```bash
