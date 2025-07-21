@@ -59,13 +59,13 @@ The Dash-based web interface mirrors the CLI processing pipeline. It reads
 highlights any time markers. Four interactive graphs are displayed:
 3D trajectory, 2D trajectory, linear speed and angular speed. A drop-down menu
 lets you apply any smoothing filter defined under `filter_test.filters` to the
-speed traces.
-Use the time-range slider to focus on a portion of the recording. The **Play**
-button replays the trajectory by advancing the slider and drawing a grey marker
-across all plots. Clicking a point on any graph highlights the same time on the
-other figures. The raw values for the selected interval appear in a table
-below. The YAML configuration can be edited directly in the browser. Saving the
-text reloads the data and updates all controls without restarting the server.
+speed traces. Use the time-range slider to focus on a portion of the recording.
+The **Play** button replays the trajectory and marks the current time across all
+plots. Clicking a point on any graph highlights the same time on the other
+figures. A collapsible *Edit configuration* panel lets you modify `config.yaml`
+inside the browser. Saving the text reloads the data and updates all controls
+without restarting the server.
+
 
 
 ```bash
@@ -73,6 +73,7 @@ python -m interactive_app.app --config config.yaml
 ```
 
 The app listens on the port specified by `webapp.port` (default `3010`).
+If `input_file` does not exist the viewer falls back to `data/input.csv`.
 
 
 

@@ -106,14 +106,20 @@ def create_app(cfg: Config) -> Dash:
                 id="table-container",
                 style={"display": "none"},
             ),
-            html.H3("Edit configuration"),
-            dcc.Textarea(
-                id="config-editor",
-                value=cfg.as_yaml(),
-                style={"width": "100%", "height": "200px"},
+            html.Details(
+                [
+                    html.Summary("Edit configuration"),
+                    dcc.Textarea(
+                        id="config-editor",
+                        value=cfg.as_yaml(),
+                        style={"width": "100%", "height": "200px"},
+                    ),
+                    html.Button("Save Config", id="save-config"),
+                    html.Div(id="save-status"),
+                ],
+                open=False,
+                style={"margin": "20px 0"},
             ),
-            html.Button("Save Config", id="save-config"),
-            html.Div(id="save-status"),
             html.Pre(id="info", children="Hover or click on any plot for details"),
             dcc.Store(id="selected-time"),
         ]

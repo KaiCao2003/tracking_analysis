@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Tuple
 
+import pandas as pd
+
 import numpy as np
 import plotly.graph_objects as go
 
@@ -43,7 +45,8 @@ def apply_filters(signal: np.ndarray, times: np.ndarray, filters: List[dict]) ->
         Mapping of filter name to filtered array.
     """
 
-    if not filters:
+    if not filters or len(signal) == 0:
+
         return {}
 
     fs = 1.0 / float(np.mean(np.diff(times))) if len(times) > 1 else 1.0
@@ -120,7 +123,12 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
         fallback = os.path.join("data", "input.csv")
         input_file = fallback if os.path.exists(fallback) else input_file
 
-    df, _, time_col = load_data(input_file)
+    try:
+        df, _, time_col = load_data(input_file)
+    except Exception:  # noqa: BLE001
+        df = pd.read_csv(input_file, skiprows=[0, 1, 2, 5], header=[0, 1, 2, 3])
+        frame_col = next(c for c in df.columns if c[3] == "Frame")
+        time_col = next(c for c in df.columns if c[3] == "Time (Seconds)")
     groups_all = group_entities(df)
 
     selected = cfg.get("groups") or list(groups_all.keys())
@@ -135,6 +143,9 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
         end = float("inf")
     else:
         end = int(np.searchsorted(times_full, end_time, side="right")) - 1
+    if start >= len(times_full) or (end != float("inf") and end < start):
+        start = 0
+        end = len(times_full) - 1
 
     kin_cfg = cfg.get("kinematics") or {}
     smoothing = kin_cfg.get("smoothing", False)
