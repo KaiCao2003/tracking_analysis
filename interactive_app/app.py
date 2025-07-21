@@ -86,6 +86,7 @@ def create_app(cfg: Config) -> Dash:
             dcc.Graph(id="speed", style={"width": "100%", "height": "400px"}),
             dcc.Graph(id="angular", style={"width": "100%", "height": "400px"}),
             html.Button("Show Table", id="toggle-table", n_clicks=0),
+            html.Button("Edit Config", id="toggle-config", n_clicks=0),
             html.Div(
                 dash_table.DataTable(
                     id="raw-table",
@@ -106,9 +107,8 @@ def create_app(cfg: Config) -> Dash:
                 id="table-container",
                 style={"display": "none"},
             ),
-            html.Details(
+            html.Div(
                 [
-                    html.Summary("Edit configuration"),
                     dcc.Textarea(
                         id="config-editor",
                         value=cfg.as_yaml(),
@@ -117,8 +117,8 @@ def create_app(cfg: Config) -> Dash:
                     html.Button("Save Config", id="save-config"),
                     html.Div(id="save-status"),
                 ],
-                open=False,
-                style={"margin": "20px 0"},
+                id="config-container",
+                style={"display": "none", "margin": "20px 0"},
             ),
             html.Pre(id="info", children="Hover or click on any plot for details"),
             dcc.Store(id="selected-time"),
@@ -246,17 +246,18 @@ def create_app(cfg: Config) -> Dash:
         Input("traj2d", "relayoutData"),
         State("time-range", "value"),
         State("time-range", "max"),
+        State("time-range", "min"),
         prevent_initial_call=True,
     )
-    def _update_range(_, r_speed, r_ang, r3d, r2d, val, maximum):
+    def _update_range(_, r_speed, r_ang, r3d, r2d, val, maximum, minimum):
         """Advance playback or sync slider when plots are zoomed."""
         trigger = callback_context.triggered_id
         if trigger == "play-int":
             start, end = val
-            step = round(max((maximum - start) / 50, 0.1), 1)
+            step = round(max((maximum - end) / 50, 0.1), 1)
             if end + step > maximum:
                 return [start, maximum], maximum
-            return [start + step, end + step], start + step
+            return [start + step, end + step], end + step
         r = r_ang or r_speed or r3d or r2d
         if not r:
             raise PreventUpdate
@@ -268,6 +269,8 @@ def create_app(cfg: Config) -> Dash:
             start = float(r["xaxis.range[0]"])
             end = float(r["xaxis.range[1]"])
             return [start, end], start
+        if "xaxis.autorange" in r:
+            return [minimum, maximum], minimum
         raise PreventUpdate
 
     @app.callback(
@@ -280,8 +283,25 @@ def create_app(cfg: Config) -> Dash:
         disp = style.get("display", "block")
         return {"display": "none" if disp != "none" else "block"}
 
-    @app.callback(Output("selected-time", "data", allow_duplicate=True), Input("time-range", "value"), prevent_initial_call=True)
-    def _sync_time(val):
+    @app.callback(
+        Output("config-container", "style"),
+        Input("toggle-config", "n_clicks"),
+        State("config-container", "style"),
+        prevent_initial_call=True,
+    )
+    def _toggle_config(n, style):
+        disp = style.get("display", "block")
+        return {"display": "none" if disp != "none" else "block"}
+
+    @app.callback(
+        Output("selected-time", "data", allow_duplicate=True),
+        Input("time-range", "value"),
+        State("play-int", "disabled"),
+        prevent_initial_call=True,
+    )
+    def _sync_time(val, disabled):
+        if not disabled:
+            raise PreventUpdate
         return val[0] if val else None
 
     @app.callback(
