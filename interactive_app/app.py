@@ -229,7 +229,6 @@ def create_app(cfg: Config) -> Dash:
         Input("traj2d", "relayoutData"),
         State("time-range", "min"),
         State("time-range", "max"),
-        State("time-range", "min"),
         prevent_initial_call=True,
     )
     def _sync_slider(r_speed, r_ang, r3d, r2d, tmin, tmax):
