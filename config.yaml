@@ -84,8 +84,8 @@ filter_test:
   # choose data source: angular_speed, position_x, position_y or position_z
   source: angular_speed
   # time range for the test
-  start_time: 57
-  end_time: 65
+  start_time: 0
+  end_time: null
 
 
   filters:
@@ -105,4 +105,4 @@ filter_test:
     - type: window
       window: 10
     - type: decimal_removal
-      digits: 1
+      digits: 2

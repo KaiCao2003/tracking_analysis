@@ -195,7 +195,7 @@ def main() -> None:
     plot_dir = os.path.join(out_dir, f"filter_test_{stamp}")
     os.makedirs(plot_dir, exist_ok=True)
 
-    plt.figure(figsize=(20, 12))
+    plt.figure(figsize=(100, 12))
     plt.plot(t, base, label="original")
     for name, arr in results.items():
         plt.plot(t, arr, label=name)
