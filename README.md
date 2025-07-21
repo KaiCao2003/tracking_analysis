@@ -57,13 +57,15 @@ python -m tracking_analysis.trim <input.csv> [output.csv] --summary summary.txt
 The Dash-based web interface mirrors the CLI processing pipeline. It reads
 `config.yaml`, applies the same filtering, slicing and smoothing settings and
 highlights any time markers. Four interactive graphs are displayed:
-3D trajectory, 2D trajectory, linear speed and angular speed.
-Use the one‑second time-range slider to focus on a portion of the recording. The **Play**
-button animates the slider to replay the track. Zooming or selecting a region in any
-plot updates the others, and hovering a point highlights the same time across all graphs.
-Clicking a point shows the exact position and velocity, while the raw values for the selected
-interval appear in a table below. The YAML configuration can be edited directly in the browser
-and saved to a new file.
+3D trajectory, 2D trajectory, linear speed and angular speed. A drop-down menu
+lets you apply any smoothing filter defined under `filter_test.filters` to the
+speed traces.
+Use the time-range slider to focus on a portion of the recording. The **Play**
+button replays the trajectory by advancing the slider and drawing a grey marker
+across all plots. Clicking a point on any graph highlights the same time on the
+other figures. The raw values for the selected interval appear in a table
+below. The YAML configuration can be edited directly in the browser. Saving the
+text reloads the data and updates all controls without restarting the server.
 
 
 ```bash
