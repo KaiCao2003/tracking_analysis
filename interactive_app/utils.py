@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 import pandas as pd
 
@@ -24,6 +24,8 @@ from tracking_analysis.kinematics import (
     compute_angular_velocity,
 )
 from scipy.signal import butter, filtfilt, savgol_filter, lfilter, firwin
+
+from dash import html, dcc
 
 
 def apply_filters(signal: np.ndarray, times: np.ndarray, filters: List[dict]) -> Dict[str, np.ndarray]:
@@ -112,6 +114,71 @@ def apply_filters(signal: np.ndarray, times: np.ndarray, filters: List[dict]) ->
         results[name] = arr
 
     return results
+
+
+def build_config_form(cfg_dict: Dict[str, Any], prefix: str = "") -> List[Any]:
+    """Recursively convert a config dictionary into Dash form components."""
+    fields: List[Any] = []
+    for key, value in cfg_dict.items():
+        full = f"{prefix}{key}"
+        comp_id = {"type": "cfg-input", "key": full}
+        if isinstance(value, dict):
+            children = build_config_form(value, prefix=f"{full}.")
+            fields.append(
+                html.Details(
+                    [html.Summary(key), html.Div(children, style={"marginLeft": "15px"})]
+                )
+            )
+        elif isinstance(value, bool):
+            fields.append(
+                html.Div(
+                    [
+                        html.Span(key, style={"marginRight": "10px"}),
+                        html.Button(
+                            "On" if value else "Off",
+                            id={"type": "cfg-toggle", "key": full},
+                            n_clicks=0,
+                            style={"color": "black" if value else "grey"},
+                        ),
+                    ],
+                    style={"marginBottom": "6px"},
+                )
+            )
+        elif isinstance(value, (int, float)):
+            fields.append(
+                html.Div(
+                    [
+                        html.Label(key),
+                        dcc.Input(value=value, type="number", id=comp_id, style={"marginLeft": "5px"}),
+                    ],
+                    style={"marginBottom": "6px"},
+                )
+            )
+        elif isinstance(value, list):
+            fields.append(
+                html.Div(
+                    [
+                        html.Label(key),
+                        dcc.Input(
+                            value=",".join(str(v) for v in value),
+                            id=comp_id,
+                            style={"marginLeft": "5px"},
+                        ),
+                    ],
+                    style={"marginBottom": "6px"},
+                )
+            )
+        else:
+            fields.append(
+                html.Div(
+                    [
+                        html.Label(key),
+                        dcc.Input(value=value or "", id=comp_id, style={"marginLeft": "5px"}),
+                    ],
+                    style={"marginBottom": "6px"},
+                )
+            )
+    return fields
 
 
 

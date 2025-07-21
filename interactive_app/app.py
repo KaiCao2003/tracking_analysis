@@ -9,13 +9,19 @@ from datetime import datetime
 import numpy as np
 from dash import Dash, dcc, html, dash_table, callback_context
 import dash
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 
 from tracking_analysis.config import Config
 
-from interactive_app.utils import build_table, make_figures, prepare_data, slice_range
+from interactive_app.utils import (
+    build_table,
+    make_figures,
+    prepare_data,
+    slice_range,
+    build_config_form,
+)
 
 
 def create_app(cfg: Config) -> Dash:
@@ -25,13 +31,15 @@ def create_app(cfg: Config) -> Dash:
 
     app = Dash(__name__)
     filters_cfg = cfg.get("filter_test", "filters", default=[]) or []
-    filter_names = ["base"] + [
-        f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)
+    filter_names = [
+        "base",
+        *[f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)],
     ]
     times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
     t_min, t_max = float(times_ref[0]), float(times_ref[-1])
     slider_step = round(max((t_max - t_min) / 50, 0.1), 1)
 
+    config_children = build_config_form(cfg._cfg)
     app.layout = html.Div(
         [
             html.H2("Interactive Trajectory Viewer"),
@@ -86,6 +94,7 @@ def create_app(cfg: Config) -> Dash:
             dcc.Graph(id="speed", style={"width": "100%", "height": "400px"}),
             dcc.Graph(id="angular", style={"width": "100%", "height": "400px"}),
             html.Button("Show Table", id="toggle-table", n_clicks=0),
+            html.Button("Edit Config", id="toggle-config", n_clicks=0),
             html.Div(
                 dash_table.DataTable(
                     id="raw-table",
@@ -106,19 +115,44 @@ def create_app(cfg: Config) -> Dash:
                 id="table-container",
                 style={"display": "none"},
             ),
-            html.Details(
+            html.Div(
                 [
-                    html.Summary("Edit configuration"),
-                    dcc.Textarea(
-                        id="config-editor",
-                        value=cfg.as_yaml(),
-                        style={"width": "100%", "height": "200px"},
-                    ),
-                    html.Button("Save Config", id="save-config"),
-                    html.Div(id="save-status"),
+                    html.Div(
+                        [
+                            html.Button(
+                                "✕",
+                                id="close-config",
+                                n_clicks=0,
+                                style={"float": "right"},
+                            ),
+                            html.H4("Configuration"),
+                            html.Div(id="config-form", children=config_children),
+                            html.Button("Save", id="save-config"),
+                            html.Div(id="save-status"),
+                        ],
+                        style={
+                            "background": "white",
+                            "padding": "15px",
+                            "width": "320px",
+                            "maxHeight": "80vh",
+                            "overflowY": "auto",
+                            "fontFamily": "sans-serif",
+                        },
+                    )
                 ],
-                open=False,
-                style={"margin": "20px 0"},
+                id="config-modal",
+                style={
+                    "display": "none",
+                    "position": "fixed",
+                    "top": "0",
+                    "left": "0",
+                    "width": "100%",
+                    "height": "100%",
+                    "background": "rgba(0,0,0,0.4)",
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                    "zIndex": "1000",
+                },
             ),
             html.Pre(id="info", children="Hover or click on any plot for details"),
             dcc.Store(id="selected-time"),
@@ -168,107 +202,62 @@ def create_app(cfg: Config) -> Dash:
         table = build_table(d, start, end)
         return (*figs, table, "Updated")
 
-    @app.callback(
-        Output("info", "children"),
-        Output("selected-time", "data", allow_duplicate=True),
-        Input("traj3d", "clickData"),
-        Input("traj2d", "clickData"),
-        Input("speed", "clickData"),
-        Input("angular", "clickData"),
-        State("entity-dropdown", "value"),
-        prevent_initial_call=True,
-    )
-    def _display_info(click3d, click2d, click_speed, click_ang, selected_id):
-        ctx = callback_context
-        if not selected_id or not ctx.triggered:
-            return "Click a point on any plot", dash.no_update
-
-        trigger = ctx.triggered_id
-        d = data[selected_id]
-
-        if trigger in {"traj3d", "traj2d"}:
-            click = click3d if trigger == "traj3d" else click2d
-            if not click:
-                raise PreventUpdate
-            idx = click["points"][0]["pointIndex"]
-            t = d["times"][idx]
-            frame = d["frames"][idx]
-            p = d["pos"][idx]
-            info = (
-                f"Frame: {int(frame)}\n"
-
-                f"Time: {t:.3f}s\n"
-                f"X: {p[0]:.3f}\nY: {p[1]:.3f}\nZ: {p[2]:.3f}"
-            )
-            return info, float(t)
-
-        if trigger == "speed":
-            if not click_speed:
-                raise PreventUpdate
-            idx = click_speed["points"][0]["pointIndex"]
-            t = d["t_speed"][idx]
-            frame = d["frames_speed"][idx]
-            spd = click_speed["points"][0]["y"]
-            return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nSpeed: {float(spd):.3f}", float(t)
-
-
-        if trigger == "angular":
-            if not click_ang:
-                raise PreventUpdate
-            idx = click_ang["points"][0]["pointIndex"]
-            t = d["t_ang_speed"][idx]
-            frame = d["frames_ang"][idx]
-            ang = click_ang["points"][0]["y"]
-            return f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nAngular Speed: {float(ang):.3f}", float(t)
-
-        raise PreventUpdate
 
     @app.callback(
         Output("play-int", "disabled"),
         Output("play-btn", "children"),
-
+        Output("selected-time", "data", allow_duplicate=True),
         Input("play-btn", "n_clicks"),
         State("play-int", "disabled"),
+        State("time-range", "value"),
         prevent_initial_call=True,
     )
-    def _toggle_play(n, disabled):
+    def _toggle_play(n, disabled, t_range):
         disabled = not disabled
-        return disabled, ("Play" if disabled else "Pause")
+        start = t_range[0] if t_range else 0.0
+        return disabled, ("Play" if disabled else "Pause"), (start if not disabled else dash.no_update)
 
 
     @app.callback(
         Output("time-range", "value", allow_duplicate=True),
-        Output("selected-time", "data", allow_duplicate=True),
-        Input("play-int", "n_intervals"),
         Input("speed", "relayoutData"),
         Input("angular", "relayoutData"),
         Input("traj3d", "relayoutData"),
         Input("traj2d", "relayoutData"),
-        State("time-range", "value"),
+        State("time-range", "min"),
         State("time-range", "max"),
         prevent_initial_call=True,
     )
-    def _update_range(_, r_speed, r_ang, r3d, r2d, val, maximum):
-        """Advance playback or sync slider when plots are zoomed."""
-        trigger = callback_context.triggered_id
-        if trigger == "play-int":
-            start, end = val
-            step = round(max((maximum - start) / 50, 0.1), 1)
-            if end + step > maximum:
-                return [start, maximum], maximum
-            return [start + step, end + step], start + step
-        r = r_ang or r_speed or r3d or r2d
-        if not r:
+    def _sync_slider(r_speed, r_ang, r3d, r2d, tmin, tmax):
+        rdata = r_speed or r_ang or r3d or r2d
+        if not rdata:
             raise PreventUpdate
-        if "xaxis.range" in r:
-            start = float(r["xaxis.range"][0])
-            end = float(r["xaxis.range"][1])
-            return [start, end], start
-        if "xaxis.range[0]" in r and "xaxis.range[1]" in r:
-            start = float(r["xaxis.range[0]"])
-            end = float(r["xaxis.range[1]"])
-            return [start, end], start
-        raise PreventUpdate
+        if "xaxis.autorange" in rdata:
+            return [tmin, tmax]
+        if "xaxis.range" in rdata:
+            x0, x1 = rdata["xaxis.range"]
+        elif "xaxis.range[0]" in rdata:
+            x0 = rdata["xaxis.range[0]"]
+            x1 = rdata["xaxis.range[1]"]
+        else:
+            raise PreventUpdate
+        return [float(x0), float(x1)]
+
+    @app.callback(
+        Output("selected-time", "data", allow_duplicate=True),
+        Input("play-int", "n_intervals"),
+        State("selected-time", "data"),
+        State("time-range", "value"),
+        prevent_initial_call=True,
+    )
+    def _advance_time(_, current, trange):
+        start, end = trange
+        step = round(max((end - start) / 200, 0.05), 2)
+        pos = start if current is None else float(current)
+        nxt = pos + step
+        if nxt >= end:
+            return end
+        return nxt
 
     @app.callback(
         Output("table-container", "style"),
@@ -280,9 +269,100 @@ def create_app(cfg: Config) -> Dash:
         disp = style.get("display", "block")
         return {"display": "none" if disp != "none" else "block"}
 
-    @app.callback(Output("selected-time", "data", allow_duplicate=True), Input("time-range", "value"), prevent_initial_call=True)
-    def _sync_time(val):
+    @app.callback(
+        Output("info", "children"),
+        Output("selected-time", "data", allow_duplicate=True),
+        Input("traj3d", "hoverData"),
+        Input("traj2d", "hoverData"),
+        Input("speed", "hoverData"),
+        Input("angular", "hoverData"),
+        Input("traj3d", "clickData"),
+        Input("traj2d", "clickData"),
+        Input("speed", "clickData"),
+        Input("angular", "clickData"),
+        State("entity-dropdown", "value"),
+        prevent_initial_call=True,
+    )
+    def _update_info(h3d_h, h2d_h, hs_h, ha_h, h3d_c, h2d_c, hs_c, ha_c, gid):
+        if not gid:
+            raise PreventUpdate
+        trig = callback_context.triggered_id
+        d = data[gid]
+        info = "Hover or click on any plot"
+        t_val = dash.no_update
+        def select_point(pnt, times_source, frames_source, pos_source=None):
+            if not pnt:
+                return None
+            idx = pnt["points"][0]["pointIndex"]
+            t = times_source[idx] if idx < len(times_source) else float("nan")
+            frame = frames_source[idx] if idx < len(frames_source) else float("nan")
+            if pos_source is not None:
+                pos = pos_source[idx]
+                return (
+                    f"Frame: {int(frame)}\nTime: {float(t):.3f}s\nX: {pos[0]:.3f}\nY: {pos[1]:.3f}\nZ: {pos[2]:.3f}",
+                    float(t),
+                )
+            else:
+                val = pnt["points"][0]["y"]
+                label = "Speed" if times_source is d["t_speed"] else "Angular Speed"
+                return (
+                    f"Frame: {int(frame)}\nTime: {float(t):.3f}s\n{label}: {float(val):.3f}",
+                    float(t),
+                )
+
+        if trig == "traj3d":
+            res = select_point(h3d_c or h3d_h, d["times"], d["frames"], d["pos"])
+        elif trig == "traj2d":
+            res = select_point(h2d_c or h2d_h, d["times"], d["frames"], d["pos"])
+        elif trig == "speed":
+            res = select_point(hs_c or hs_h, d["t_speed"], d["frames_speed"])
+        elif trig == "angular":
+            res = select_point(ha_c or ha_h, d["t_ang_speed"], d["frames_ang"])
+        else:
+            res = None
+        if res:
+            info, t_val = res
+        return info, t_val
+
+
+    @app.callback(
+        Output("config-modal", "style"),
+        Input("toggle-config", "n_clicks"),
+        Input("close-config", "n_clicks"),
+        State("config-modal", "style"),
+        prevent_initial_call=True,
+    )
+    def _toggle_config(open_n, close_n, style):
+        disp = style.get("display", "none")
+        trig = callback_context.triggered_id
+        if trig == "toggle-config":
+            style["display"] = "flex" if disp == "none" else "none"
+        else:
+            style["display"] = "none"
+        return style
+
+    @app.callback(
+        Output({"type": "cfg-toggle", "key": MATCH}, "children"),
+        Output({"type": "cfg-toggle", "key": MATCH}, "style"),
+        Input({"type": "cfg-toggle", "key": MATCH}, "n_clicks"),
+        State({"type": "cfg-toggle", "key": MATCH}, "children"),
+        prevent_initial_call=True,
+    )
+    def _toggle_generic(_, state):
+        enable = state == "Off"
+        return ("On" if enable else "Off"), {"color": "black" if enable else "grey"}
+
+    @app.callback(
+        Output("selected-time", "data", allow_duplicate=True),
+        Input("time-range", "value"),
+        State("play-int", "disabled"),
+        prevent_initial_call=True,
+    )
+    def _sync_selected(val, disabled):
+        if not disabled:
+            raise PreventUpdate
         return val[0] if val else None
+
 
     @app.callback(
         Output("entity-dropdown", "options"),
@@ -292,37 +372,58 @@ def create_app(cfg: Config) -> Dash:
         Output("time-range", "step"),
         Output("time-range", "value", allow_duplicate=True),
         Output("filter-dropdown", "options"),
-        Output("config-editor", "value"),
         Output("selected-time", "data", allow_duplicate=True),
+        Output("config-form", "children"),
         Output("save-status", "children"),
         Input("save-config", "n_clicks"),
-        State("config-editor", "value"),
+        State({"type": "cfg-input", "key": ALL}, "value"),
+        State({"type": "cfg-input", "key": ALL}, "id"),
+        State({"type": "cfg-toggle", "key": ALL}, "children"),
+        State({"type": "cfg-toggle", "key": ALL}, "id"),
         prevent_initial_call=True,
     )
-    def _save_config(_, text):
+    def _save_config(_, values, ids, toggles, tid):
         nonlocal data, groups, filter_names
-        try:
-            cfg.update_from_yaml(text)
-        except Exception as exc:  # noqa: BLE001
-            return (
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                f"Invalid YAML: {exc}",
-            )
+
+        for val, ident in zip(values, ids):
+            path = ident["key"].split(".")
+            node = cfg._cfg
+            for p in path[:-1]:
+                node = node.setdefault(p, {})
+            key = path[-1]
+            orig = node.get(key)
+            if isinstance(orig, bool):
+                node[key] = bool(val)
+            elif isinstance(orig, int) and not isinstance(orig, bool):
+                try:
+                    node[key] = int(val)
+                except (TypeError, ValueError):
+                    node[key] = orig
+            elif isinstance(orig, float):
+                try:
+                    node[key] = float(val)
+                except (TypeError, ValueError):
+                    node[key] = orig
+            elif isinstance(orig, list):
+                node[key] = [v.strip() for v in str(val).split(",") if v.strip()]
+            else:
+                node[key] = None if val in ("", None) else val
+
+        for text, ident in zip(toggles, tid):
+            path = ident["key"].split(".")
+            node = cfg._cfg
+            for p in path[:-1]:
+                node = node.setdefault(p, {})
+            node[path[-1]] = text == "On"
+
+        cfg._normalize()
 
         data, groups = prepare_data(cfg)
         default_gid = groups[0] if groups else None
-
         filters_cfg = cfg.get("filter_test", "filters", default=[]) or []
-        filter_names = ["base"] + [
-            f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)
+        filter_names = [
+            "base",
+            *[f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)],
         ]
 
         times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
@@ -339,6 +440,8 @@ def create_app(cfg: Config) -> Dash:
         dropdown_opts = [{"label": g, "value": g} for g in groups]
         filter_opts = [{"label": n, "value": n} for n in filter_names]
 
+        form = build_config_form(cfg._cfg)
+
         return (
             dropdown_opts,
             default_gid,
@@ -347,8 +450,8 @@ def create_app(cfg: Config) -> Dash:
             slider_step,
             [t_min, t_max],
             filter_opts,
-            cfg.as_yaml(),
             None,
+            form,
             f"Saved to {path}",
         )
 
