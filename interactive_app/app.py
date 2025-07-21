@@ -244,6 +244,7 @@ def create_app(cfg: Config) -> Dash:
         return (*figs, table, "Updated")
 
 
+
     @app.callback(
         Output("play-int", "disabled"),
         Output("play-btn", "children"),
@@ -292,6 +293,7 @@ def create_app(cfg: Config) -> Dash:
             x1 = rdata["xaxis.range[1]"]
         else:
             raise PreventUpdate
+
         return [float(x0), float(x1)], float(x0)
 
     @app.callback(
@@ -401,6 +403,7 @@ def create_app(cfg: Config) -> Dash:
         if not disabled:
             raise PreventUpdate
         return val[0] if val else None
+
 
 
     @app.callback(
