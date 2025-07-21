@@ -99,6 +99,11 @@ filter_test:
       digits: 1
 ```
 
+The `window` filter averages the first and last half of the
+configured window. The `decimal_removal` filter truncates the
+signal after scaling it to the -1..1 range before converting back to
+degrees.
+
 Run the tool with:
 
 ```bash

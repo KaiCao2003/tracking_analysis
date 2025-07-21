@@ -159,7 +159,9 @@ def _apply_filters(signal: np.ndarray, fs: float, filters: Iterable[dict]) -> Di
             digits = int(cfg.get("digits", 1))
             digits = max(0, digits)
             factor = 10 ** digits
-            filt = np.trunc(signal * factor) / factor
+            scaled = signal / 180.0
+            scaled = np.trunc(scaled * factor) / factor
+            filt = scaled * 180.0
         elif ftype == "fir":
             taps = int(cfg.get("numtaps", 21))
             cutoff_hz = float(cfg.get("cutoff", 1.0))
