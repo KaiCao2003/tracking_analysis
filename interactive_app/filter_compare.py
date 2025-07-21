@@ -141,6 +141,25 @@ def _apply_filters(signal: np.ndarray, fs: float, filters: Iterable[dict]) -> Di
                 window += 1
             poly = int(cfg.get("polyorder", 2))
             filt = savgol_filter(signal, window, poly)
+        elif ftype == "window":
+            window = int(cfg.get("window", 10))
+            if window < 2:
+                window = 2
+            if window % 2 != 0:
+                window += 1
+            half = window // 2
+            padded = np.pad(signal, (half, half), mode="edge")
+            filt = np.empty_like(signal, dtype=float)
+            for i in range(len(signal)):
+                seg = padded[i : i + window]
+                m1 = np.mean(seg[:half])
+                m2 = np.mean(seg[half:])
+                filt[i] = (m1 + m2) / 2
+        elif ftype == "decimal_removal":
+            digits = int(cfg.get("digits", 1))
+            digits = max(0, digits)
+            factor = 10 ** digits
+            filt = np.trunc(signal * factor) / factor
         elif ftype == "fir":
             taps = int(cfg.get("numtaps", 21))
             cutoff_hz = float(cfg.get("cutoff", 1.0))

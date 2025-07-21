@@ -93,6 +93,10 @@ filter_test:
   filters:
     - type: moving_average
       window: 5
+    - type: window
+      window: 10
+    - type: decimal_removal
+      digits: 1
 ```
 
 Run the tool with:

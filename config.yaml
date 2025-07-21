@@ -102,3 +102,7 @@ filter_test:
     - type: fir
       numtaps: 21
       cutoff: 2.0
+    - type: window
+      window: 10
+    - type: decimal_removal
+      digits: 1
