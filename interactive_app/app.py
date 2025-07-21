@@ -121,6 +121,7 @@ def create_app(cfg: Config) -> Dash:
                         [
                             html.Button(
                                 "✕",
+
                                 id="close-config",
                                 n_clicks=0,
                                 style={"float": "right"},
@@ -128,6 +129,7 @@ def create_app(cfg: Config) -> Dash:
                             html.H4("Configuration"),
                             html.Div(id="config-form", children=config_children),
                             html.Button("Save", id="save-config"),
+
                             html.Div(id="save-status"),
                         ],
                         style={
@@ -137,6 +139,7 @@ def create_app(cfg: Config) -> Dash:
                             "maxHeight": "80vh",
                             "overflowY": "auto",
                             "fontFamily": "sans-serif",
+
                         },
                     )
                 ],
@@ -226,14 +229,17 @@ def create_app(cfg: Config) -> Dash:
         Input("traj2d", "relayoutData"),
         State("time-range", "min"),
         State("time-range", "max"),
+        State("time-range", "min"),
         prevent_initial_call=True,
     )
     def _sync_slider(r_speed, r_ang, r3d, r2d, tmin, tmax):
+
         rdata = r_speed or r_ang or r3d or r2d
         if not rdata:
             raise PreventUpdate
         if "xaxis.autorange" in rdata:
             return [tmin, tmax]
+
         if "xaxis.range" in rdata:
             x0, x1 = rdata["xaxis.range"]
         elif "xaxis.range[0]" in rdata:
@@ -258,6 +264,7 @@ def create_app(cfg: Config) -> Dash:
         if nxt >= end:
             return end
         return nxt
+
 
     @app.callback(
         Output("table-container", "style"),
@@ -352,6 +359,7 @@ def create_app(cfg: Config) -> Dash:
         enable = state == "Off"
         return ("On" if enable else "Off"), {"color": "black" if enable else "grey"}
 
+
     @app.callback(
         Output("selected-time", "data", allow_duplicate=True),
         Input("time-range", "value"),
@@ -359,6 +367,7 @@ def create_app(cfg: Config) -> Dash:
         prevent_initial_call=True,
     )
     def _sync_selected(val, disabled):
+
         if not disabled:
             raise PreventUpdate
         return val[0] if val else None
@@ -418,6 +427,7 @@ def create_app(cfg: Config) -> Dash:
 
         cfg._normalize()
 
+
         data, groups = prepare_data(cfg)
         default_gid = groups[0] if groups else None
         filters_cfg = cfg.get("filter_test", "filters", default=[]) or []
@@ -425,6 +435,7 @@ def create_app(cfg: Config) -> Dash:
             "base",
             *[f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)],
         ]
+
 
         times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
         t_min, t_max = float(times_ref[0]), float(times_ref[-1])

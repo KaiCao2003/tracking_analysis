@@ -114,3 +114,7 @@ python -m interactive_app.filter_compare --config config.yaml
 ```
 
 Generated figures are stored under the `results/` directory.
+
+Legacy callbacks for the old YAML editor remain commented out in
+`interactive_app/app.py` for reference. The web interface now exposes a simple
+form-based configuration panel instead of a raw text area.
