@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Tuple
 
+import pandas as pd
+
 import numpy as np
 import plotly.graph_objects as go
 
@@ -21,6 +23,96 @@ from tracking_analysis.kinematics import (
     compute_angular_speed,
     compute_angular_velocity,
 )
+from scipy.signal import butter, filtfilt, savgol_filter, lfilter, firwin
+
+
+def apply_filters(signal: np.ndarray, times: np.ndarray, filters: List[dict]) -> Dict[str, np.ndarray]:
+    """Apply a list of filters to a signal.
+
+    Parameters
+    ----------
+    signal : ndarray
+        1-D numeric array to filter.
+    times : ndarray
+        Time values corresponding to ``signal``.
+    filters : list of dict
+        Filter configuration dictionaries. Each must contain a ``type`` key and
+        may specify additional parameters like ``window`` or ``cutoff``.
+
+    Returns
+    -------
+    dict
+        Mapping of filter name to filtered array.
+    """
+
+    if not filters or len(signal) == 0:
+        return {}
+
+    fs = 1.0 / float(np.mean(np.diff(times))) if len(times) > 1 else 1.0
+    results: Dict[str, np.ndarray] = {}
+    for idx, cfg in enumerate(filters):
+        ftype = cfg.get("type")
+        if not ftype:
+            continue
+        name = cfg.get("name", ftype or f"f{idx}")
+        arr = signal
+        if ftype == "moving_average":
+            window = max(1, int(cfg.get("window", 5)))
+            kernel = np.ones(window) / window
+            arr = np.convolve(signal, kernel, mode="same")
+        elif ftype == "ema":
+            alpha = float(cfg.get("alpha", 0.3))
+            arr = np.empty_like(signal)
+            arr[0] = signal[0]
+            for i in range(1, len(signal)):
+                arr[i] = alpha * signal[i] + (1 - alpha) * arr[i - 1]
+        elif ftype == "butterworth":
+            order = int(cfg.get("order", 3))
+            cutoff_hz = float(cfg.get("cutoff", 1.0))
+            nyq = 0.5 * fs
+            norm_cutoff = min(cutoff_hz / nyq, 0.99)
+            b, a = butter(order, norm_cutoff, btype="low")
+            padlen = 3 * max(len(a), len(b))
+            arr = filtfilt(b, a, signal) if len(signal) > padlen else lfilter(b, a, signal)
+        elif ftype == "savgol":
+            window = int(cfg.get("window", 5))
+            if window % 2 == 0:
+                window += 1
+            poly = int(cfg.get("polyorder", 2))
+            arr = savgol_filter(signal, window, poly)
+        elif ftype == "window":
+            window = int(cfg.get("window", 10))
+            if window < 2:
+                window = 2
+            if window % 2 != 0:
+                window += 1
+            half = window // 2
+            padded = np.pad(signal, (half, half), mode="edge")
+            arr = np.empty_like(signal, dtype=float)
+            for i in range(len(signal)):
+                seg = padded[i : i + window]
+                m1 = np.mean(seg[:half])
+                m2 = np.mean(seg[half:])
+                arr[i] = (m1 + m2) / 2
+        elif ftype == "decimal_removal":
+            digits = int(cfg.get("digits", 1))
+            digits = max(0, digits)
+            factor = 10 ** digits
+            scaled = signal / 180.0
+            scaled = np.trunc(scaled * factor) / factor
+            arr = scaled * 180.0
+        elif ftype == "fir":
+            taps = int(cfg.get("numtaps", 21))
+            cutoff_hz = float(cfg.get("cutoff", 1.0))
+            nyq = 0.5 * fs
+            arr = lfilter(firwin(taps, cutoff_hz / nyq), [1.0], signal)
+        else:
+            continue
+
+        results[name] = arr
+
+    return results
+
 
 
 def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
@@ -30,7 +122,12 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
         fallback = os.path.join("data", "input.csv")
         input_file = fallback if os.path.exists(fallback) else input_file
 
-    df, _, time_col = load_data(input_file)
+    try:
+        df, _, time_col = load_data(input_file)
+    except Exception:  # noqa: BLE001
+        df = pd.read_csv(input_file, skiprows=[0, 1, 2, 5], header=[0, 1, 2, 3])
+        frame_col = next(c for c in df.columns if c[3] == "Frame")
+        time_col = next(c for c in df.columns if c[3] == "Time (Seconds)")
     groups_all = group_entities(df)
 
     selected = cfg.get("groups") or list(groups_all.keys())
@@ -45,6 +142,9 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
         end = float("inf")
     else:
         end = int(np.searchsorted(times_full, end_time, side="right")) - 1
+    if start >= len(times_full) or (end != float("inf") and end < start):
+        start = 0
+        end = len(times_full) - 1
 
     kin_cfg = cfg.get("kinematics") or {}
     smoothing = kin_cfg.get("smoothing", False)
@@ -53,6 +153,7 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
     method = kin_cfg.get("smoothing_method", "savgol")
 
     filt_cfg = cfg.get("filtering") or {}
+    filter_defs = cfg.get("filter_test", "filters", default=[]) or []
 
     results = {}
     for gid in selected:
@@ -158,6 +259,10 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             pos = apply_ranges(pos, start, [(s - 1, e) for s, e in speed_ranges])
             pos = apply_ranges(pos, start, [(s - 1, e) for s, e in ang_ranges])
 
+        # compute additional filtered variants of speed signals
+        speed_filters = apply_filters(speed, t_v, filter_defs)
+        ang_filters = apply_filters(ang_speed, t_as, filter_defs)
+
         markers = []
         for tm in cfg.get("time_markers") or []:
             idx = int(np.searchsorted(times, tm, side="left"))
@@ -180,6 +285,8 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             "ang_vel": ang_vel,
             "t_ang_vel": t_av,
             "markers": markers,
+            "speed_filters": speed_filters,
+            "ang_speed_filters": ang_filters,
         }
 
     return results, selected
@@ -196,6 +303,7 @@ def make_figures(
     ang_speed: np.ndarray,
     t_ang_speed: np.ndarray,
     frames_ang: np.ndarray,
+    highlight_time: float | None = None,
 ) -> Tuple[go.Figure, go.Figure, go.Figure, go.Figure]:
     """Create the 3D/2D trajectory and speed plots."""
     fig3d = go.Figure()
@@ -302,6 +410,32 @@ def make_figures(
         yaxis_title="Angular Speed",
         title="Angular Speed",
     )
+
+    if highlight_time is not None:
+        idx = int(np.searchsorted(times, highlight_time, side="left"))
+        idx = max(0, min(idx, len(times) - 1))
+        hx, hy, hz = pos[idx]
+        fig3d.add_trace(
+            go.Scatter3d(
+                x=[hx],
+                y=[hy],
+                z=[hz],
+                mode="markers",
+                marker=dict(color="gray", size=6),
+                showlegend=False,
+            )
+        )
+        fig2d.add_trace(
+            go.Scatter(
+                x=[hx],
+                y=[hy],
+                mode="markers",
+                marker=dict(color="gray", size=8),
+                showlegend=False,
+            )
+        )
+        fig_speed.add_vline(x=highlight_time, line_color="gray", line_dash="dot")
+        fig_ang.add_vline(x=highlight_time, line_color="gray", line_dash="dot")
 
     return fig3d, fig2d, fig_speed, fig_ang
 
