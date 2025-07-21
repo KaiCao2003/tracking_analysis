@@ -1,5 +1,5 @@
 # Ignore analysis results and caches
 results/
 __pycache__/
-/data/
+data/
 .idea/
