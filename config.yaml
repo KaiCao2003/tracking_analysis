@@ -23,10 +23,10 @@ groups: [H1]
 # savgol / window
 
 kinematics:
-  smoothing: false
+  smoothing: true
   smoothing_window: 10
   smoothing_polyorder: 2
-  smoothing_method: savgol
+  smoothing_method: window
 
 # Filtering thresholds for speed values. Either speed of angular speed
 filtering:

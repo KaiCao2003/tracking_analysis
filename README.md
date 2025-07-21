@@ -67,6 +67,7 @@ inside the browser. Saving the text reloads the data and updates all controls
 without restarting the server.
 
 
+
 ```bash
 python -m interactive_app.app --config config.yaml
 ```

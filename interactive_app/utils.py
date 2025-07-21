@@ -46,6 +46,7 @@ def apply_filters(signal: np.ndarray, times: np.ndarray, filters: List[dict]) ->
     """
 
     if not filters or len(signal) == 0:
+
         return {}
 
     fs = 1.0 / float(np.mean(np.diff(times))) if len(times) > 1 else 1.0
