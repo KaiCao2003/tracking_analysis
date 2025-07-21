@@ -58,14 +58,13 @@ The Dash-based web interface mirrors the CLI processing pipeline. It reads
 `config.yaml`, applies the same filtering, slicing and smoothing settings and
 highlights any time markers. Four interactive graphs are displayed:
 3D trajectory, 2D trajectory, linear speed and angular speed. A drop-down menu
-lets you apply any smoothing filter defined under `filter_test.filters` to the
-speed traces. Use the time-range slider to focus on a portion of the recording.
-The **Play** button replays the trajectory and marks the current time across all
-plots. Clicking a point on any graph highlights the same time on the other
-figures. A collapsible *Edit configuration* panel lets you modify `config.yaml`
-inside the browser. Saving the text reloads the data and updates all controls
-without restarting the server.
-
+lists every filter from `filter_test.filters`, matching the options available in
+`filter_compare`. Use the time-range slider to focus on a portion of the
+recording. The **Play** button replays the trajectory and marks the current time
+across all plots. Clicking a point on any graph highlights the same moment on
+the others using grey markers. A collapsible *Edit configuration* panel lets you
+modify `config.yaml` inside the browser. Saving the text reloads the data and
+updates all controls without restarting the server.
 
 
 ```bash

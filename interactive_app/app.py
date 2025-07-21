@@ -170,12 +170,13 @@ def create_app(cfg: Config) -> Dash:
 
     @app.callback(
         Output("info", "children"),
-        Output("selected-time", "data"),
+        Output("selected-time", "data", allow_duplicate=True),
         Input("traj3d", "clickData"),
         Input("traj2d", "clickData"),
         Input("speed", "clickData"),
         Input("angular", "clickData"),
         State("entity-dropdown", "value"),
+        prevent_initial_call=True,
     )
     def _display_info(click3d, click2d, click_speed, click_ang, selected_id):
         ctx = callback_context
@@ -236,8 +237,8 @@ def create_app(cfg: Config) -> Dash:
 
 
     @app.callback(
-        Output("time-range", "value"),
-        Output("selected-time", "data"),
+        Output("time-range", "value", allow_duplicate=True),
+        Output("selected-time", "data", allow_duplicate=True),
         Input("play-int", "n_intervals"),
         Input("speed", "relayoutData"),
         Input("angular", "relayoutData"),
@@ -279,7 +280,7 @@ def create_app(cfg: Config) -> Dash:
         disp = style.get("display", "block")
         return {"display": "none" if disp != "none" else "block"}
 
-    @app.callback(Output("selected-time", "data"), Input("time-range", "value"))
+    @app.callback(Output("selected-time", "data", allow_duplicate=True), Input("time-range", "value"), prevent_initial_call=True)
     def _sync_time(val):
         return val[0] if val else None
 
@@ -289,10 +290,10 @@ def create_app(cfg: Config) -> Dash:
         Output("time-range", "min"),
         Output("time-range", "max"),
         Output("time-range", "step"),
-        Output("time-range", "value"),
+        Output("time-range", "value", allow_duplicate=True),
         Output("filter-dropdown", "options"),
         Output("config-editor", "value"),
-        Output("selected-time", "data"),
+        Output("selected-time", "data", allow_duplicate=True),
         Output("save-status", "children"),
         Input("save-config", "n_clicks"),
         State("config-editor", "value"),
