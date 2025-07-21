@@ -8,7 +8,7 @@ input_file: "./data/output1.csv"
 # Time interval in seconds. Use null for end to cover entire file.
 interval:
   start_time: 0
-  end_time: null
+  end_time: 100
 
 # Extra time markers in seconds to draw on plots
 # Use null for no markers

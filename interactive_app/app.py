@@ -299,7 +299,12 @@ def create_app(cfg: Config) -> Dash:
         def select_point(pnt, times_source, frames_source, pos_source=None):
             if not pnt:
                 return None
-            idx = pnt["points"][0]["pointIndex"]
+            pt = pnt["points"][0]
+            idx = pt.get("pointIndex")
+            if idx is None:
+                idx = pt.get("pointNumber")
+            if idx is None:
+                return None
             t = times_source[idx] if idx < len(times_source) else float("nan")
             frame = frames_source[idx] if idx < len(frames_source) else float("nan")
             if pos_source is not None:
@@ -309,7 +314,7 @@ def create_app(cfg: Config) -> Dash:
                     float(t),
                 )
             else:
-                val = pnt["points"][0]["y"]
+                val = pt.get("y", float("nan"))
                 label = "Speed" if times_source is d["t_speed"] else "Angular Speed"
                 return (
                     f"Frame: {int(frame)}\nTime: {float(t):.3f}s\n{label}: {float(val):.3f}",
