@@ -109,16 +109,40 @@ def create_app(cfg: Config) -> Dash:
             ),
             html.Div(
                 [
-                    dcc.Textarea(
-                        id="config-editor",
-                        value=cfg.as_yaml(),
-                        style={"width": "100%", "height": "200px"},
-                    ),
-                    html.Button("Save Config", id="save-config"),
-                    html.Div(id="save-status"),
+                    html.Div(
+                        [
+                            html.Button("X", id="close-config", n_clicks=0, style={"float": "right"}),
+                            html.H4("Edit configuration"),
+                            dcc.Textarea(
+                                id="config-editor",
+                                value=cfg.as_yaml(),
+                                style={"width": "100%", "height": "200px"},
+                            ),
+                            html.Button("Save Config", id="save-config"),
+                            html.Div(id="save-status"),
+                        ],
+                        style={
+                            "background": "white",
+                            "padding": "10px",
+                            "width": "500px",
+                            "maxHeight": "80vh",
+                            "overflow": "auto",
+                        },
+                    )
                 ],
-                id="config-container",
-                style={"display": "none", "margin": "20px 0"},
+                id="config-modal",
+                style={
+                    "display": "none",
+                    "position": "fixed",
+                    "top": "0",
+                    "left": "0",
+                    "width": "100%",
+                    "height": "100%",
+                    "background": "rgba(0,0,0,0.4)",
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                    "zIndex": "1000",
+                },
             ),
             html.Pre(id="info", children="Hover or click on any plot for details"),
             dcc.Store(id="selected-time"),
@@ -181,7 +205,7 @@ def create_app(cfg: Config) -> Dash:
     def _display_info(click3d, click2d, click_speed, click_ang, selected_id):
         ctx = callback_context
         if not selected_id or not ctx.triggered:
-            return "Click a point on any plot", dash.no_update
+            return "Hover or click on any plot", dash.no_update
 
         trigger = ctx.triggered_id
         d = data[selected_id]
@@ -258,7 +282,15 @@ def create_app(cfg: Config) -> Dash:
             if end + step > maximum:
                 return [start, maximum], maximum
             return [start + step, end + step], end + step
-        r = r_ang or r_speed or r3d or r2d
+        r = None
+        if trigger == "speed":
+            r = r_speed
+        elif trigger == "angular":
+            r = r_ang
+        elif trigger == "traj3d":
+            r = r3d
+        elif trigger == "traj2d":
+            r = r2d
         if not r:
             raise PreventUpdate
         if "xaxis.range" in r:
@@ -284,14 +316,47 @@ def create_app(cfg: Config) -> Dash:
         return {"display": "none" if disp != "none" else "block"}
 
     @app.callback(
-        Output("config-container", "style"),
-        Input("toggle-config", "n_clicks"),
-        State("config-container", "style"),
+        Output("selected-time", "data", allow_duplicate=True),
+        Input("traj3d", "hoverData"),
+        Input("traj2d", "hoverData"),
+        Input("speed", "hoverData"),
+        Input("angular", "hoverData"),
+        State("entity-dropdown", "value"),
         prevent_initial_call=True,
     )
-    def _toggle_config(n, style):
-        disp = style.get("display", "block")
-        return {"display": "none" if disp != "none" else "block"}
+    def _hover_time(h3d, h2d, hs, ha, gid):
+        if not gid:
+            raise PreventUpdate
+        trigger = callback_context.triggered_id
+        d = data[gid]
+        if trigger == "traj3d" and h3d:
+            idx = h3d["points"][0]["pointIndex"]
+            return float(d["times"][idx])
+        if trigger == "traj2d" and h2d:
+            idx = h2d["points"][0]["pointIndex"]
+            return float(d["times"][idx])
+        if trigger == "speed" and hs:
+            return float(hs["points"][0]["x"])
+        if trigger == "angular" and ha:
+            return float(ha["points"][0]["x"])
+        raise PreventUpdate
+
+    @app.callback(
+        Output("config-modal", "style"),
+        Input("toggle-config", "n_clicks"),
+        Input("close-config", "n_clicks"),
+        State("config-modal", "style"),
+        prevent_initial_call=True,
+    )
+    def _toggle_config(open_n, close_n, style):
+        disp = style.get("display", "none")
+        trigger = callback_context.triggered_id
+        if trigger == "toggle-config":
+            new_disp = "flex" if disp == "none" else "none"
+        else:
+            new_disp = "none"
+        style["display"] = new_disp
+        return style
 
     @app.callback(
         Output("selected-time", "data", allow_duplicate=True),
