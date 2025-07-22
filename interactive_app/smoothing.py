@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Callable, Dict
+import inspect
 import numpy as np
 
 SMOOTHING_FUNCS: Dict[str, Callable[..., np.ndarray]] = {}
@@ -20,7 +21,9 @@ def apply(method: str, data: np.ndarray, **kwargs) -> np.ndarray:
     func = SMOOTHING_FUNCS.get(method)
     if func is None:
         raise ValueError(f"Unknown smoothing method '{method}'")
-    return func(data, **kwargs)
+    sig = inspect.signature(func)
+    filtered = {k: v for k, v in kwargs.items() if k in sig.parameters}
+    return func(data, **filtered)
 
 
 @register("savgol")
