@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Tuple
 
+from interactive_app import smoothing
+
 import numpy as np
 import pandas as pd
 
@@ -107,6 +109,13 @@ def apply_filters(x: np.ndarray, times: np.ndarray, filters: List[dict]) -> Dict
             cutoff_hz = float(cfg.get("cutoff", 1.0))
             nyq = 0.5 * fs
             y = lfilter(firwin(taps, cutoff_hz / nyq), [1.0], x)
+        elif ftype == "lateral_inhibition":
+            tau_fast = int(cfg.get("tau_fast", 2))
+            tau_slow = int(cfg.get("tau_slow", 8))
+            k_inhibit = float(cfg.get("k_inhibit", 1.0))
+            y = smoothing.lateral_inhibition(
+                x, tau_fast=tau_fast, tau_slow=tau_slow, k_inhibit=k_inhibit
+            )
         else:
             continue
 

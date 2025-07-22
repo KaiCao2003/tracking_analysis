@@ -107,4 +107,6 @@ filter_test:
     - type: decimal_removal
       digits: 2
     - type: lateral_inhibition
-
+      tau_fast: 2
+      tau_slow: 8
+      k_inhibit: 1.0
