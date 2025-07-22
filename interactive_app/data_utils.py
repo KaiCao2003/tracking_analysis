@@ -16,7 +16,7 @@ from tracking_analysis.filtering import (
     filter_position,
     apply_ranges,
 )
-from tracking_analysis.kinematics import (
+from interactive_app.kinematics import (
     compute_linear_velocity,
     compute_angular_speed,
     compute_angular_velocity,

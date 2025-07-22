@@ -62,6 +62,17 @@ handling and plotting remain independent:
 - `ui_components.py` holds the Dash form builders used in the configuration
   panel.
 - `utils.py` re-exports these helpers for backward compatibility.
+- `smoothing.py` defines pluggable smoothing functions used when computing
+  velocities.
+
+### Adding smoothing methods
+
+`interactive_app.smoothing` exposes a `register` decorator and an
+`apply` helper. Built-in functions are registered with names like `"savgol"`
+and `"ema"`. To add a new algorithm simply append a function decorated
+with `@register("my_method")` in `smoothing.py`. Set
+`kinematics.smoothing_method` to the same name in `config.yaml` and both
+`app.py` and `filter_compare.py` will automatically use the new smoother.
 
 ## Interactive Web Application
 

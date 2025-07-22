@@ -16,3 +16,4 @@ This repository contains utilities for analyzing tracking CSV files.
   * `plotting.py` contains Plotly figure builders
   * `ui_components.py` creates Dash form elements
   * `utils.py` re-exports these helpers for backward compatibility
+  * `smoothing.py` lists pluggable smoothing algorithms

@@ -15,7 +15,7 @@ import pandas as pd
 from tracking_analysis.config import Config
 from tracking_analysis.reader import load_data, preprocess_csv
 from tracking_analysis.grouping import group_entities
-from tracking_analysis.kinematics import compute_linear_velocity, compute_angular_speed
+from interactive_app.kinematics import compute_linear_velocity, compute_angular_speed
 from interactive_app.data_utils import apply_filters
 
 
@@ -83,8 +83,21 @@ def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
     )[i0:i1]
     times = times_all[i0:i1]
 
+    kin_cfg = cfg.get("kinematics") or {}
+    smoothing = kin_cfg.get("smoothing", False)
+    window = kin_cfg.get("smoothing_window", 5)
+    polyorder = kin_cfg.get("smoothing_polyorder", 2)
+    method = kin_cfg.get("smoothing_method", "savgol")
+
     if src == "speed":
-        signal, t = compute_linear_velocity(pos, times)
+        signal, t = compute_linear_velocity(
+            pos,
+            times,
+            smoothing=smoothing,
+            window=window,
+            polyorder=polyorder,
+            method=method,
+        )
     elif src == "angular_speed":
         if "Rotation" not in ent_df.columns.get_level_values(1):
             raise ValueError("No rotation data available for angular speed")
@@ -93,7 +106,14 @@ def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
                   .droplevel(0, axis=1)[["X", "Y", "Z", "W"]]
                   .values
               )[i0:i1]
-        signal, t = compute_angular_speed(rot, times)
+        signal, t = compute_angular_speed(
+            rot,
+            times,
+            smoothing=smoothing,
+            window=window,
+            polyorder=polyorder,
+            method=method,
+        )
     else:
         comp = {"position_x": 0, "position_y": 1, "position_z": 2}.get(src)
         if comp is None:
