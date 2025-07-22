@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -89,7 +89,7 @@ def apply_filters(x: np.ndarray, times: np.ndarray, filters: List[dict]) -> Dict
             padded = np.pad(x, (half, half), mode="edge")
             y = np.empty_like(x, dtype=float)
             for i in range(len(x)):
-                seg = padded[i : i + window]
+                seg = padded[i:i + window]
                 m1 = np.mean(seg[:half])
                 m2 = np.mean(seg[half:])
                 y[i] = (m1 + m2) / 2
@@ -195,9 +195,9 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             times = times_full[start:]
             frames = frames_full[start:]
         else:
-            sub = df.iloc[start : end + 1]
-            times = times_full[start : end + 1]
-            frames = frames_full[start : end + 1]
+            sub = df.iloc[start:end + 1]
+            times = times_full[start:end + 1]
+            frames = frames_full[start:end + 1]
 
         ent_df = sub.xs(gid, level=0, axis=1)
         if "Position" not in ent_df.columns.get_level_values(1):

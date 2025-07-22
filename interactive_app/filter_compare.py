@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 from datetime import datetime
-from typing import Iterable, Dict, Tuple
+from typing import Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,10 +42,10 @@ def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
         data_path = out_file
 
     try:
-        df, frame_col, time_col = load_data(data_path)
+        df, _, time_col = load_data(data_path)
     except Exception:
         df = pd.read_csv(data_path, skiprows=[0, 1, 2, 5], header=[0, 1, 2, 3])
-        frame_col = next(c for c in df.columns if c[3] == "Frame")
+        _ = next(c for c in df.columns if c[3] == "Frame")
         time_col = next(c for c in df.columns if c[3] == "Time (Seconds)")
 
     groups = group_entities(df)
@@ -123,8 +123,6 @@ def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
 
     fs = 1.0 / float(np.mean(np.diff(t))) if len(t) > 1 else 1.0
     return t, signal, fs
-
-
 
 
 def main() -> None:
