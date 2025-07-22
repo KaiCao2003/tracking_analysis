@@ -1,0 +1,118 @@
+"""Kinematics helpers using pluggable smoothing functions."""
+
+from __future__ import annotations
+
+from typing import Tuple
+
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+
+from tracking_analysis.angles import unwrap_deg
+from .smoothing import apply
+
+
+def _window_speed(pos: np.ndarray, times: np.ndarray, window: int) -> Tuple[np.ndarray, np.ndarray]:
+    if window % 2 != 0:
+        raise ValueError("window must be even for windowed smoothing")
+    half = window // 2
+    n = len(times)
+    speeds = []
+    t_mid = []
+    for start in range(0, n - window + 1):
+        mid = start + half
+        end = start + window
+        dt1 = times[start + half - 1] - times[start]
+        dt2 = times[end - 1] - times[mid]
+        if dt1 == 0 or dt2 == 0:
+            speeds.append(np.nan)
+        else:
+            d1 = np.linalg.norm(pos[start + half - 1] - pos[start]) / dt1
+            d2 = np.linalg.norm(pos[end - 1] - pos[mid]) / dt2
+            speeds.append((d1 + d2) / 2)
+        t_mid.append((times[start + half - 1] + times[mid]) / 2)
+    return np.array(speeds), np.array(t_mid)
+
+
+def compute_linear_velocity(
+    pos: np.ndarray,
+    times: np.ndarray,
+    *,
+    smoothing: bool = False,
+    window: int = 5,
+    polyorder: int = 2,
+    method: str = "savgol",
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute linear speed from positions with optional smoothing."""
+    if smoothing:
+        m = method
+        if m == "window":
+            return _window_speed(pos, times, window)
+        pos = apply(m, pos, window=window, polyorder=polyorder)
+    dt = np.diff(times)
+    dpos = np.diff(pos, axis=0)
+    vel = dpos / dt[:, None]
+    speed = np.linalg.norm(vel, axis=1)
+    t_mid = times[:-1] + dt / 2
+    return speed, t_mid
+
+
+def compute_angular_speed(
+    rot: np.ndarray,
+    times: np.ndarray,
+    *,
+    smoothing: bool = False,
+    window: int = 5,
+    polyorder: int = 2,
+    method: str = "savgol",
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute angular speed from orientation data."""
+    if rot.shape[1] == 3:
+        angles = unwrap_deg(rot, axis=0)
+        quat = R.from_euler("xyz", angles, degrees=True).as_quat()
+    else:
+        quat = rot
+    if smoothing:
+        quat = apply(method, quat, window=window, polyorder=polyorder)
+    q = quat / np.linalg.norm(quat, axis=1)[:, None]
+    q_inv = np.column_stack([-q[:, :3], q[:, 3]])
+    q_next = q[1:]
+    q_cur_inv = q_inv[:-1]
+    x1, y1, z1, w1 = q_cur_inv.T
+    x2, y2, z2, w2 = q_next.T
+    w_rel = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+    angle = 2 * np.arccos(np.clip(w_rel, -1.0, 1.0))
+    dt = np.diff(times)
+    ang_speed = angle / dt
+    t_mid = times[:-1] + dt / 2
+    return ang_speed, t_mid
+
+
+def compute_angular_velocity(
+    rot: np.ndarray,
+    times: np.ndarray,
+    *,
+    smoothing: bool = False,
+    window: int = 5,
+    polyorder: int = 2,
+    method: str = "savgol",
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute per-axis angular velocity."""
+    if rot.shape[1] == 4:
+        angles = R.from_quat(rot).as_euler("xyz", degrees=True)
+    else:
+        angles = rot
+    angles = unwrap_deg(angles, axis=0)
+    if smoothing:
+        angles = apply(method, angles, window=window, polyorder=polyorder)
+    dt = np.diff(times)
+    dangles = np.diff(angles, axis=0)
+    ang_vel = np.deg2rad(dangles) / dt[:, None]
+    t_mid = times[:-1] + dt / 2
+    return ang_vel, t_mid
+
+
+__all__ = [
+    "compute_linear_velocity",
+    "compute_angular_speed",
+    "compute_angular_velocity",
+]
