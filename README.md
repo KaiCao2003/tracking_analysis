@@ -68,11 +68,12 @@ handling and plotting remain independent:
 ### Adding smoothing methods
 
 `interactive_app.smoothing` exposes a `register` decorator and an
-`apply` helper. Built-in functions are registered with names like `"savgol"`
-and `"ema"`. To add a new algorithm simply append a function decorated
-with `@register("my_method")` in `smoothing.py`. Set
-`kinematics.smoothing_method` to the same name in `config.yaml` and both
-`app.py` and `filter_compare.py` will automatically use the new smoother.
+`apply` helper. Built-in functions are registered with names like
+`"savgol"`, `"ema"`, `"window"` and `"lateral_inhibition"`. To add a new
+algorithm simply append a function decorated with `@register("my_method")`
+in `smoothing.py`. Set `kinematics.smoothing_method` to the same name in
+`config.yaml` and both `app.py` and `filter_compare.py` will automatically
+use the new smoother.
 
 ## Interactive Web Application
 

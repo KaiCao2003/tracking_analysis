@@ -63,3 +63,45 @@ def window_avg(data: np.ndarray, window: int = 4) -> np.ndarray:
         segment = padded[i : i + window]
         out[i] = np.mean(segment, axis=0)
     return out
+
+
+@register("lateral_inhibition")
+def lateral_inhibition(
+    data: np.ndarray,
+    tau_fast: int = 2,
+    tau_slow: int = 8,
+    k_inhibit: float = 1.0,
+) -> np.ndarray:
+    """Causal difference-of-exponentials filter.
+
+    Parameters
+    ----------
+    data:
+        Input signal (1-D or 2-D array where rows are samples).
+    tau_fast:
+        Time constant of the fast exponential in samples.
+    tau_slow:
+        Time constant of the slow exponential in samples.
+    k_inhibit:
+        Strength of the slow component.
+
+    Returns
+    -------
+    np.ndarray
+        Filtered signal of the same shape as ``data``.
+    """
+
+    alpha_fast = 1.0 / float(tau_fast)
+    alpha_slow = 1.0 / float(tau_slow)
+
+    ema_fast = np.empty_like(data, dtype=float)
+    ema_slow = np.empty_like(data, dtype=float)
+    ema_fast[0] = data[0]
+    ema_slow[0] = data[0]
+    for i in range(1, len(data)):
+        ema_fast[i] = ema_fast[i - 1] + alpha_fast * (data[i] - ema_fast[i - 1])
+        ema_slow[i] = ema_slow[i - 1] + alpha_slow * (data[i] - ema_slow[i - 1])
+
+    out = ema_fast - k_inhibit * ema_slow
+
+    return out
