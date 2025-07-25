@@ -254,6 +254,7 @@ def main():
                 window=nm_window,
                 after=nm_after,
                 angular=ang_vel,
+
             )
             if nm_ranges:
                 speed = apply_ranges(speed, start_frames, nm_ranges)
@@ -265,6 +266,7 @@ def main():
         else:
             nm_ranges = []
             nm_pos_ranges = []
+
 
         if filt_cfg.get('enable'):
             if pos_ranges:
