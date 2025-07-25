@@ -55,6 +55,7 @@ files are saved inside the run folder with names derived from the input file and
 current settings. `output_file` and `summary_file` are optional paths for writing
 copies of these files; both default to `null`.
 
+
 You can also run the trimming step manually:
 
 ```bash
