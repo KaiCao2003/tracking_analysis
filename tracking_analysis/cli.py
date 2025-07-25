@@ -249,12 +249,22 @@ def main():
             nm_window = int(nm_cfg.get('window', 10))
             nm_after = int(nm_cfg.get('after', 10))
             _, nm_ranges = filter_no_moving(
-                speed_raw, start_frames, window=nm_window, after=nm_after, angular=ang_vel
+                speed_raw,
+                start_frames,
+                window=nm_window,
+                after=nm_after,
+                angular=ang_vel,
             )
             if nm_ranges:
                 speed = apply_ranges(speed, start_frames, nm_ranges)
                 ang_spd = apply_ranges(ang_spd, start_frames, nm_ranges)
-                pos = apply_ranges(pos, start, [(s - 1, e) for s, e in nm_ranges])
+                nm_pos_ranges = [(s - 1, e) for s, e in nm_ranges]
+                pos = apply_ranges(pos, start, nm_pos_ranges)
+            else:
+                nm_pos_ranges = []
+        else:
+            nm_ranges = []
+            nm_pos_ranges = []
 
         if filt_cfg.get('enable'):
             if pos_ranges:
@@ -269,9 +279,9 @@ def main():
 
             speed_pos_ranges = [(s - 1, e) for s, e in speed_ranges]
             ang_pos_ranges = [(s - 1, e) for s, e in ang_ranges]
-            all_ranges = merge_ranges(speed_pos_ranges + ang_pos_ranges + pos_ranges)
+            all_ranges = merge_ranges(speed_pos_ranges + ang_pos_ranges + pos_ranges + nm_pos_ranges)
 
-            full_speed_ranges = merge_ranges(speed_ranges + ang_ranges + rng_conv)
+            full_speed_ranges = merge_ranges(speed_ranges + ang_ranges + rng_conv + nm_ranges)
 
             speed_ranges = [(s - start_frames, e - start_frames) for s, e in full_speed_ranges]
             ang_ranges = [(s - start_frames, e - start_frames) for s, e in ang_ranges]
@@ -280,6 +290,12 @@ def main():
             speed_ranges = []
             ang_ranges = []
             traj_ranges = []
+
+        nm_speed_ranges = [(s - start_frames, e - start_frames) for s, e in nm_ranges]
+        nm_traj_ranges = [(s - start, e - start) for s, e in nm_pos_ranges]
+        speed_ranges = merge_ranges(speed_ranges + nm_speed_ranges)
+        ang_ranges = merge_ranges(ang_ranges + nm_speed_ranges)
+        traj_ranges = merge_ranges(traj_ranges + nm_traj_ranges)
 
         frames_v = np.arange(start + 1, start + 1 + len(speed))
         frames_a = np.arange(start + 1, start + 1 + len(ang_spd))
