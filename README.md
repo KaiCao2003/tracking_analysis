@@ -121,14 +121,10 @@ filter_test:
       window: 5
     - type: window
       window: 10
-    - type: decimal_removal
-      digits: 1
 ```
 
 The `window` filter averages the first and last half of the
-configured window. The `decimal_removal` filter truncates the
-signal after scaling it to the -1..1 range before converting back to
-degrees.
+configured window.
 
 Run the tool with:
 
