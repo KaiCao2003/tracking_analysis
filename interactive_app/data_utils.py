@@ -212,6 +212,7 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
                     ang_speed = apply_ranges(ang_speed, start_frames, nm_ranges)
                     pos = apply_ranges(pos, start, [(s - 1, e) for s, e in nm_ranges])
 
+
             if pos_ranges:
                 rng_conv = [(max(start_frames, s), e + 1) for s, e in pos_ranges]
                 speed = apply_ranges(speed, start_frames, rng_conv)
