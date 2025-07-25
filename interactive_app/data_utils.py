@@ -203,9 +203,10 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             ang_speed = apply_ranges(ang_speed, start_frames, speed_ranges)
             speed = apply_ranges(speed, start_frames, ang_ranges)
 
-        if filt_cfg.get("no_moving_enable"):
-            nm_window = int(filt_cfg.get("no_moving_window", 10))
-            nm_after = int(filt_cfg.get("no_moving_after", 10))
+        nm_cfg = cfg.get("no_moving") or {}
+        if nm_cfg.get("enable"):
+            nm_window = int(nm_cfg.get("window", 10))
+            nm_after = int(nm_cfg.get("after", 10))
             _, nm_ranges = filter_no_moving(
                 speed_raw, start_frames, window=nm_window, after=nm_after, angular=ang_vel
             )
