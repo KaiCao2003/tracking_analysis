@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import os
-from datetime import datetime
 from typing import Tuple
 
 import numpy as np
@@ -15,11 +14,12 @@ import pandas as pd
 from tracking_analysis.config import Config
 from tracking_analysis.reader import load_data, preprocess_csv
 from tracking_analysis.grouping import group_entities
+from tracking_analysis.naming import build_run_dir, build_info_suffix, slugify
 from interactive_app.kinematics import compute_linear_velocity, compute_angular_speed
 from interactive_app.data_utils import apply_filters
 
 
-def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
+def _load_signal(cfg: Config, run_dir: str) -> Tuple[np.ndarray, np.ndarray, float]:
     """Load a 1-D signal from the configured CSV.
 
     Returns (times, signal, fs).
@@ -28,14 +28,15 @@ def _load_signal(cfg: Config) -> Tuple[np.ndarray, np.ndarray, float]:
     pre_cfg = cfg.get("preprocess") or {}
     data_path = in_path
     if pre_cfg.get("enable"):
-        out_file = pre_cfg.get(
-            "output_file",
-            os.path.join(cfg.get("output", "output_dir"), "trimmed.csv"),
-        )
-        summary = pre_cfg.get(
-            "summary_file",
-            os.path.join(cfg.get("output", "output_dir"), "summary.txt"),
-        )
+        base = os.path.splitext(os.path.basename(in_path))[0]
+        suffix = build_info_suffix(cfg)
+        trim = f"{slugify(base)}_trimmed"
+        summ = f"{slugify(base)}_summary"
+        if suffix:
+            trim += f"_{suffix}"
+            summ += f"_{suffix}"
+        out_file = os.path.join(run_dir, trim + ".csv")
+        summary = os.path.join(run_dir, summ + ".txt")
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         os.makedirs(os.path.dirname(summary), exist_ok=True)
         preprocess_csv(in_path, out_file, summary)
@@ -135,17 +136,17 @@ def main() -> None:
         print("filter_test.enable is not set")
         return
 
-    t, base, _ = _load_signal(cfg)
+    base_out = cfg.get("output", "output_dir")
+    run_dir = build_run_dir(cfg, base_out, prefix="filter_test")
+    os.makedirs(run_dir, exist_ok=True)
+
+    t, base, _ = _load_signal(cfg, run_dir)
 
     filters = cfg.get("filter_test", "filters", default=[]) or []
     results = apply_filters(base, t, filters)
 
 
-    out_dir = cfg.get("output", "output_dir")
-    os.makedirs(out_dir, exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plot_dir = os.path.join(out_dir, f"filter_test_{stamp}")
-    os.makedirs(plot_dir, exist_ok=True)
+    plot_dir = run_dir
 
     plt.figure(figsize=(100, 12))
     plt.plot(t, base, label="original")

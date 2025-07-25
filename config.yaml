@@ -37,19 +37,19 @@ filtering:
   angular_speed_lower: null
   angular_speed_upper: null
 
-  # apply the no-moving filter when true
-  no_moving_enable: true
-  # remove stretches where speed stays zero for at least this many frames
-  no_moving_window: 10
-  # additionally drop this many frames after each no-movement period
-  no_moving_after: 10
-
   x_lower: null
   x_upper: null
   y_lower: null
   y_upper: null
   z_lower: null
   z_upper: null
+
+no_moving:
+  enable: true
+  # remove stretches where speed stays zero for at least this many frames
+  window: 10
+  # additionally drop this many frames after each no-movement period
+  after: 10
 
 # Output settings
 output:
@@ -76,8 +76,10 @@ output:
 # Preprocess settings
 preprocess:
   enable: true
-  output_file: "./results/trimmed.csv"
-  summary_file: "./results/summary.txt"
+  # optional: also copy the trimmed CSV
+  output_file: null
+  # optional: also copy the summary file
+  summary_file: null
 
 # Settings for the interactive web application
 webapp:
