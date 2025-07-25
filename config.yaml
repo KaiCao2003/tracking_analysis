@@ -99,13 +99,8 @@ filter_test:
     - type: savgol
       window: 7
       polyorder: 2
-    - type: fir
-      numtaps: 21
-      cutoff: 2.0
     - type: window
       window: 10
-    - type: decimal_removal
-      digits: 2
     - type: lateral_inhibition
       tau_fast: 5
       tau_slow: 30
