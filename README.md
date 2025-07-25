@@ -50,7 +50,11 @@ next `after` frames are discarded.
 Controls which figures and exports are produced. `full_size_plots` enlarges plots to 16x10 inches. `x_limit` and `y_limit` specify the axis maxima for time-series plots (set to `null` for automatic scaling).
 
 ### `preprocess`
-If `enable` is true, the CSV is trimmed before analysis and a brief `summary_file` is written. The trimmed and summary files are saved inside the run folder with names derived from the input file and current settings.
+If `enable` is true, the CSV is trimmed before analysis. The trimmed and summary
+files are saved inside the run folder with names derived from the input file and
+current settings. `output_file` and `summary_file` are optional paths for writing
+copies of these files; both default to `null`.
+
 
 You can also run the trimming step manually:
 

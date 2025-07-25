@@ -15,11 +15,13 @@ from tracking_analysis.filtering import (
     compute_stats,
     filter_position,
     merge_ranges,
+    filter_no_moving,
 )
 from tracking_analysis.grouping import group_entities
 from tracking_analysis.kinematics import (
     compute_linear_velocity,
-    compute_angular_speed
+    compute_angular_speed,
+    compute_angular_velocity,
 )
 from tracking_analysis.plotting import (
     plot_trajectory_2d,
@@ -172,7 +174,7 @@ def main():
                 tmarkers.append(idx)
 
         # Compute speeds
-        speed, t_v   = compute_linear_velocity(
+        speed, t_v = compute_linear_velocity(
             pos,
             times,
             smoothing=smoothing,
@@ -180,14 +182,19 @@ def main():
             polyorder=polyorder,
             method=method,
         )
+        speed_raw = speed.copy()
 
         ang_spd, t_a = compute_angular_speed(
             quat, times, smoothing, window, polyorder
         )
+        ang_vel, _ = compute_angular_velocity(
+            quat, times, smoothing, window, polyorder
+        )
+
+        start_frames = start + 1
 
         # Optional range filtering
         if filt_cfg.get('enable'):
-            start_frames = start + 1
             speed_ranges = []
             ang_ranges = []
             pos_ranges = []
@@ -230,10 +237,26 @@ def main():
                     filt_cfg.get("z_upper"),
                 )
 
-            # cross apply ranges
             ang_spd = apply_ranges(ang_spd, start_frames, speed_ranges)
             speed = apply_ranges(speed, start_frames, ang_ranges)
+        else:
+            speed_ranges = []
+            ang_ranges = []
+            pos_ranges = []
 
+        nm_cfg = cfg.get('no_moving') or {}
+        if nm_cfg.get('enable'):
+            nm_window = int(nm_cfg.get('window', 10))
+            nm_after = int(nm_cfg.get('after', 10))
+            _, nm_ranges = filter_no_moving(
+                speed_raw, start_frames, window=nm_window, after=nm_after, angular=ang_vel
+            )
+            if nm_ranges:
+                speed = apply_ranges(speed, start_frames, nm_ranges)
+                ang_spd = apply_ranges(ang_spd, start_frames, nm_ranges)
+                pos = apply_ranges(pos, start, [(s - 1, e) for s, e in nm_ranges])
+
+        if filt_cfg.get('enable'):
             if pos_ranges:
                 rng_conv = [(max(start_frames, s), e + 1) for s, e in pos_ranges]
                 speed = apply_ranges(speed, start_frames, rng_conv)

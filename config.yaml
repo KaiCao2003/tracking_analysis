@@ -76,8 +76,10 @@ output:
 # Preprocess settings
 preprocess:
   enable: true
-  output_file: "./results/trimmed.csv"
-  summary_file: "./results/summary.txt"
+  # optional: also copy the trimmed CSV
+  output_file: null
+  # optional: also copy the summary file
+  summary_file: null
 
 # Settings for the interactive web application
 webapp:
