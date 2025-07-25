@@ -1,10 +1,12 @@
 import argparse
 import os
 from datetime import datetime
+import shutil
 import numpy as np
 import pandas as pd
 
 from tracking_analysis.config import Config
+from tracking_analysis.naming import build_run_dir, build_info_suffix, slugify
 from tracking_analysis.reader import load_data, preprocess_csv
 from tracking_analysis.filtering import (
     filter_missing,
@@ -39,9 +41,9 @@ def main():
     # Load configuration
     cfg = Config(args.config)
 
-    # Prepare run-specific output directory
+    # Prepare run-specific output directory with descriptive name
     base_out = cfg.get('output', 'output_dir')
-    out_dir = os.path.join(base_out, datetime.now().strftime('%Y%m%d_%H%M%S'))
+    out_dir = build_run_dir(cfg, base_out)
     os.makedirs(out_dir, exist_ok=True)
 
     # Save the config used for this run
@@ -53,17 +55,32 @@ def main():
     input_path = cfg.get('input_file')
     pre_cfg = cfg.get('preprocess') or {}
     if pre_cfg.get('enable'):
-        out_file = pre_cfg.get('output_file', os.path.join(out_dir, 'trimmed.csv'))
-        summary_file = pre_cfg.get('summary_file', os.path.join(out_dir, 'summary.txt'))
-        os.makedirs(os.path.dirname(out_file), exist_ok=True)
-        os.makedirs(os.path.dirname(summary_file), exist_ok=True)
-        preprocess_csv(
-            input_path,
-            out_file,
-            summary_file,
-        )
-        # Continue with the trimmed file
-        input_path = out_file
+        base_name = os.path.splitext(os.path.basename(input_path))[0]
+        suffix = build_info_suffix(cfg)
+        trim_name = f"{slugify(base_name)}_trimmed"
+        summ_name = f"{slugify(base_name)}_summary"
+        if suffix:
+            trim_name += f"_{suffix}"
+            summ_name += f"_{suffix}"
+        run_trim = os.path.join(out_dir, trim_name + '.csv')
+        run_summary = os.path.join(out_dir, summ_name + '.txt')
+
+        os.makedirs(os.path.dirname(run_trim), exist_ok=True)
+        os.makedirs(os.path.dirname(run_summary), exist_ok=True)
+        preprocess_csv(input_path, run_trim, run_summary)
+
+        # also write to configured locations when specified
+        cfg_trim = pre_cfg.get('output_file')
+        cfg_sum = pre_cfg.get('summary_file')
+        if cfg_trim and cfg_trim != run_trim:
+            os.makedirs(os.path.dirname(cfg_trim), exist_ok=True)
+            shutil.copy(run_trim, cfg_trim)
+        if cfg_sum and cfg_sum != run_summary:
+            os.makedirs(os.path.dirname(cfg_sum), exist_ok=True)
+            shutil.copy(run_summary, cfg_sum)
+
+        # Continue with the trimmed file inside run directory
+        input_path = run_trim
 
     # Load data + frame/time columns from the original file
     df, frame_col, time_col = load_data(input_path)
