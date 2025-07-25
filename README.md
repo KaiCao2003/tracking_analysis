@@ -14,9 +14,9 @@ This project provides a small pipeline for analyzing motion tracking CSV files. 
    ```
    The script will automatically trim the CSV when `preprocess.enable` is `true`.
 
-All plots, trimmed files and statistics are written to the directory specified by `output.output_dir` (default `results/`). The trimming step also produces `summary.txt` describing the input CSV.
+All plots, trimmed files and statistics are written to the directory specified by `output.output_dir` (default `results/`). When trimming is enabled a summary file is produced alongside the trimmed CSV.
 
-Each run creates a timestamped subfolder inside `output.output_dir`. The exact configuration used is saved as `config_used.txt` within that folder.
+Each run creates a subfolder inside `output.output_dir` named with the current date/time and key settings (interval, filter toggles and markers). The same information is appended to the trimmed CSV and summary file names based on the original input file. The exact configuration used is saved as `config_used.txt` within that folder.
 
 ## Configuration Options
 
@@ -38,16 +38,16 @@ List of rigid-body base names to analyse. An empty list means all available grou
 Options for smoothing the computed velocities (`smoothing`, `smoothing_window`, `smoothing_polyorder`, `smoothing_method`).
 
 ### `filtering`
-Enable range filtering and define upper/lower thresholds for linear speed, angular speed and X/Y/Z coordinates.
-The `no_moving_enable` flag toggles removal of stationary segments. When enabled,
-`no_moving_window` sets the minimum length of a zero-speed block to discard and
-`no_moving_after` specifies how many frames after the block are also dropped.
+Range filters define upper/lower thresholds for linear and angular speed as well as position.
+Stationary segments can be removed independently via `no_moving_enable`. If either
+linear speed or angular velocity stays at zero for `no_moving_window` frames, that
+period and the following `no_moving_after` frames are discarded.
 
 ### `output`
 Controls which figures and exports are produced. `full_size_plots` enlarges plots to 16x10 inches. `x_limit` and `y_limit` specify the axis maxima for time-series plots (set to `null` for automatic scaling).
 
 ### `preprocess`
-If `enable` is true, the CSV is trimmed before analysis and a brief `summary_file` is written.
+If `enable` is true, the CSV is trimmed before analysis and a brief `summary_file` is written. The trimmed and summary files are saved inside the run folder with names derived from the input file and current settings.
 
 You can also run the trimming step manually:
 

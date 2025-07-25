@@ -212,19 +212,26 @@ def merge_ranges(ranges):
     return [(int(a), int(b)) for a, b in merged]
 
 
-def filter_no_moving(speed, start_frame, window=10, after=10):
-    """Filter sequences of zero ``speed`` lasting ``window`` frames.
+def filter_no_moving(speed, start_frame, window=10, after=10, angular=None):
+    """Filter stretches with no movement for at least ``window`` frames.
+
+    ``speed`` and ``angular`` are checked in parallel – if either is exactly
+    zero for ``window`` consecutive frames, that segment and ``after`` additional
+    frames are removed.
 
     Parameters
     ----------
     speed : array_like
-        Speed values for consecutive frames.
+        Linear speed values for consecutive frames.
     start_frame : int
         Frame index corresponding to ``speed[0]``.
     window : int, optional
         Minimum length of a zero-velocity block to remove.
     after : int, optional
         Number of additional frames to remove after a block.
+    angular : array_like, optional
+        Angular velocity array. When provided, a block is removed when either
+        ``speed`` or ``angular`` stays at zero.
 
     Returns
     -------
@@ -235,22 +242,36 @@ def filter_no_moving(speed, start_frame, window=10, after=10):
     """
 
     arr = np.asarray(speed, dtype=float)
+    ang = None
+    if angular is not None:
+        ang = np.asarray(angular, dtype=float)
+
+    mask = arr == 0
+    if ang is not None:
+        if ang.ndim > 1:
+            mask |= np.all(ang == 0, axis=1)
+        else:
+            mask |= ang == 0
+
     filtered = arr.copy()
     ranges = []
     n = len(arr)
     i = 0
     while i < n:
-        if arr[i] != 0:
+        if not mask[i]:
             i += 1
             continue
         j = i
-        while j < n and arr[j] == 0:
+        while j < n and mask[j]:
             j += 1
         if j - i >= window:
             end = min(n, j + after)
             filtered[i:end] = np.nan
             ranges.append((int(start_frame + i), int(start_frame + end)))
-        i = j
+            mask[i:end] = False
+            i = end
+        else:
+            i = j
 
     return filtered, ranges
 
