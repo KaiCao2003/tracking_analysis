@@ -154,11 +154,13 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             ang_speed, t_as = np.array([]), np.array([])
             ang_vel, t_av = np.zeros((0, 3)), np.array([])
 
+        start_frames = start + 1
+        speed_ranges: List[Tuple[int, int]] = []
+        ang_ranges: List[Tuple[int, int]] = []
+        pos_ranges: List[Tuple[int, int]] = []
+        nm_ranges: List[Tuple[int, int]] = []
+
         if filt_cfg.get("enable"):
-            start_frames = start + 1
-            speed_ranges: List[Tuple[int, int]] = []
-            ang_ranges: List[Tuple[int, int]] = []
-            pos_ranges: List[Tuple[int, int]] = []
 
             if (
                 filt_cfg.get("speed_lower") is not None
@@ -201,18 +203,20 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             ang_speed = apply_ranges(ang_speed, start_frames, speed_ranges)
             speed = apply_ranges(speed, start_frames, ang_ranges)
 
-            if filt_cfg.get("no_moving_enable"):
-                nm_window = int(filt_cfg.get("no_moving_window", 10))
-                nm_after = int(filt_cfg.get("no_moving_after", 10))
-                _, nm_ranges = filter_no_moving(
-                    speed_raw, start_frames, window=nm_window, after=nm_after
-                )
-                if nm_ranges:
-                    speed = apply_ranges(speed, start_frames, nm_ranges)
-                    ang_speed = apply_ranges(ang_speed, start_frames, nm_ranges)
-                    pos = apply_ranges(pos, start, [(s - 1, e) for s, e in nm_ranges])
+        nm_cfg = cfg.get("no_moving") or {}
+        if nm_cfg.get("enable"):
+            nm_window = int(nm_cfg.get("window", 10))
+            nm_after = int(nm_cfg.get("after", 10))
+            _, nm_ranges = filter_no_moving(
+                speed_raw, start_frames, window=nm_window, after=nm_after, angular=ang_vel
+            )
+            if nm_ranges:
+                speed = apply_ranges(speed, start_frames, nm_ranges)
+                ang_speed = apply_ranges(ang_speed, start_frames, nm_ranges)
+                pos = apply_ranges(pos, start, [(s - 1, e) for s, e in nm_ranges])
 
 
+        if filt_cfg.get("enable"):
             if pos_ranges:
                 rng_conv = [(max(start_frames, s), e + 1) for s, e in pos_ranges]
                 speed = apply_ranges(speed, start_frames, rng_conv)
