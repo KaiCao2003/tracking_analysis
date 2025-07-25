@@ -23,7 +23,7 @@ def build_info_suffix(cfg: Config) -> str:
     filt = cfg.get("filtering", "enable", default=None)
     if filt is not None:
         parts.append(f"flt{'1' if filt else '0'}")
-    nm = cfg.get("filtering", "no_moving_enable", default=None)
+    nm = cfg.get("no_moving", "enable", default=None)
     if nm is not None:
         parts.append(f"nm{'1' if nm else '0'}")
     markers = [m for m in (cfg.get("time_markers") or []) if m is not None]

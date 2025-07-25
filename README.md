@@ -37,11 +37,14 @@ List of rigid-body base names to analyse. An empty list means all available grou
 ### `kinematics`
 Options for smoothing the computed velocities (`smoothing`, `smoothing_window`, `smoothing_polyorder`, `smoothing_method`).
 
+
 ### `filtering`
 Range filters define upper/lower thresholds for linear and angular speed as well as position.
-Stationary segments can be removed independently via `no_moving_enable`. If either
-linear speed or angular velocity stays at zero for `no_moving_window` frames, that
-period and the following `no_moving_after` frames are discarded.
+
+### `no_moving`
+Stationary segments are removed when `enable` is `true`. If either linear speed or
+angular velocity stays at zero for `window` consecutive frames, that period and the
+next `after` frames are discarded.
 
 ### `output`
 Controls which figures and exports are produced. `full_size_plots` enlarges plots to 16x10 inches. `x_limit` and `y_limit` specify the axis maxima for time-series plots (set to `null` for automatic scaling).
