@@ -5,16 +5,14 @@ This repository contains utilities for analyzing tracking CSV files.
 * Place all generated files under the `results/` folder.
 * The preprocessing/trimming step is controlled by the `preprocess` section of the config.
 * The summary file should contain a concise description of the input CSV (frames, duration, etc.).
-
 * Ignore `output1.csv` if it appears – this file is for internal testing only.
-
-
-* IGNORE output1.csv if exists. That's a internal testing file shouldn't be uploaded.
-* Do not modify the `tracking_analysis` package, unless i instructed; make changes only within `interactive_app` unless i specify otherwise.
+* Do not modify the `tracking_analysis` package unless instructed; make changes only within `interactive_app` unless specified otherwise.
 * The web application code is split into small modules:
   * `data_utils.py` handles data loading and filtering
   * `plotting.py` contains Plotly figure builders
   * `ui_components.py` creates Dash form elements
-  * `utils.py` re-exports these helpers for backward compatibility
+  * `layout.py` builds the Dash layout
+  * `callbacks.py` registers Dash callbacks
   * `smoothing.py` lists pluggable smoothing algorithms
+  * `utils.py` re-exports these helpers for backward compatibility
 

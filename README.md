@@ -71,6 +71,8 @@ handling and plotting remain independent:
 - `plotting.py` defines the functions that build Plotly figures.
 - `ui_components.py` holds the Dash form builders used in the configuration
   panel.
+- `layout.py` assembles the Dash layout.
+- `callbacks.py` registers all Dash callbacks.
 - `utils.py` re-exports these helpers for backward compatibility.
 - `smoothing.py` defines pluggable smoothing functions used when computing
   velocities.
@@ -89,16 +91,17 @@ use the new smoother.
 
 The Dash-based web interface mirrors the CLI processing pipeline. It reads
 `config.yaml`, applies the same filtering, slicing and smoothing settings and
-highlights any time markers. Four interactive graphs are displayed:
-3D trajectory, 2D trajectory, linear speed and angular speed. A drop-down menu
-lists every filter from `filter_test.filters`, matching the options available in
-`filter_compare`. Use the time-range slider to focus on a portion of the
-recording. The **Play** button replays the trajectory and marks the current time
-across all plots. Clicking a point on any graph highlights the same moment on
-the others using grey markers. A collapsible *Edit configuration* window lists
-every setting from `config.yaml` with simple form controls. Switches toggle
-boolean options and inputs update numeric or text values. Saving reloads the data
-without restarting the server.
+highlights any time markers. Controls for selecting an entity, filter and table
+display sit at the top of the page followed by a global time slider and playback
+buttons. Plots are grouped into tabs: the *Trajectory* tab shows the 3D and 2D
+paths side by side while the *Kinematics* tab contains the speed and angular
+speed time-series. Clicking a point on any graph highlights the same moment on
+the others using grey markers. Configuration editing now appears as a centred
+modal dialog with a form generated from `config.yaml`. Switches toggle boolean
+options and inputs update numeric or text values. Saving reloads the data without
+restarting the server.
+`app.py` simply wires together the layout and callback modules, keeping the
+viewer easy to navigate and extend.
 
 
 ```bash
