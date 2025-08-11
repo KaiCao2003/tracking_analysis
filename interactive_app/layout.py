@@ -71,44 +71,32 @@ def build_layout(cfg, data, groups: List[str], filter_names: List[str]) -> html.
                     "margin": "10px 0",
                 },
             ),
-            dcc.Tabs(
+            html.Div(
                 [
-                    dcc.Tab(
-                        label="Trajectory",
-                        children=[
-                            html.Div(
-                                [
-                                    dcc.Graph(
-                                        id="traj3d",
-                                        style={"flex": "1", "height": "600px"},
-                                    ),
-                                    dcc.Graph(
-                                        id="traj2d",
-                                        style={"flex": "1", "height": "600px"},
-                                    ),
-                                ],
-                                style={
-                                    "display": "flex",
-                                    "gap": "20px",
-                                    "flexWrap": "wrap",
-                                },
-                            )
+                    html.Div(
+                        [
+                            dcc.Graph(id="traj3d", style={"flex": "1", "height": "400px"}),
+                            dcc.Graph(id="traj2d", style={"flex": "1", "height": "400px"}),
                         ],
+                        style={
+                            "display": "flex",
+                            "gap": "20px",
+                            "flexWrap": "wrap",
+                        },
                     ),
-                    dcc.Tab(
-                        label="Kinematics",
-                        children=[
-                            dcc.Graph(
-                                id="speed",
-                                style={"width": "100%", "height": "400px"},
-                            ),
-                            dcc.Graph(
-                                id="angular",
-                                style={"width": "100%", "height": "400px"},
-                            ),
+                    html.Div(
+                        [
+                            dcc.Graph(id="speed", style={"flex": "1", "height": "300px"}),
+                            dcc.Graph(id="angular", style={"flex": "1", "height": "300px"}),
                         ],
+                        style={
+                            "display": "flex",
+                            "gap": "20px",
+                            "flexWrap": "wrap",
+                            "marginTop": "20px",
+                        },
                     ),
-                ]
+                ],
             ),
             html.Div(
                 dash_table.DataTable(
@@ -132,42 +120,30 @@ def build_layout(cfg, data, groups: List[str], filter_names: List[str]) -> html.
             ),
             html.Div(
                 [
-                    html.Div(
-                        [
-                            html.Button(
-                                "✕",
-                                id="close-config",
-                                n_clicks=0,
-                                style={"float": "right"},
-                            ),
-                            html.H4("Configuration"),
-                            html.Div(id="config-form", children=config_children),
-                            html.Button("Save", id="save-config"),
-                            html.Div(id="save-status"),
-                        ],
-                        style={
-                            "background": "white",
-                            "padding": "20px",
-                            "width": "350px",
-                            "maxHeight": "85vh",
-                            "overflowY": "auto",
-                            "fontFamily": "sans-serif",
-                            "borderRadius": "8px",
-                            "boxShadow": "0 2px 10px rgba(0,0,0,0.3)",
-                        },
-                    )
+                    html.Button(
+                        "✕",
+                        id="close-config",
+                        n_clicks=0,
+                        style={"float": "right"},
+                    ),
+                    html.H4("Configuration"),
+                    html.Div(id="config-form", children=config_children),
+                    html.Button("Save", id="save-config"),
+                    html.Div(id="save-status"),
                 ],
-                id="config-modal",
+                id="config-panel",
                 style={
                     "display": "none",
                     "position": "fixed",
                     "top": "0",
-                    "left": "0",
-                    "width": "100%",
+                    "right": "0",
+                    "width": "350px",
                     "height": "100%",
-                    "background": "rgba(0,0,0,0.5)",
-                    "alignItems": "center",
-                    "justifyContent": "center",
+                    "background": "white",
+                    "padding": "20px",
+                    "fontFamily": "sans-serif",
+                    "overflowY": "auto",
+                    "boxShadow": "-2px 0 10px rgba(0,0,0,0.3)",
                     "zIndex": "1000",
                 },
             ),

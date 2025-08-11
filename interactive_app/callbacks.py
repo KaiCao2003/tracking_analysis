@@ -188,17 +188,17 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
         return info, t_val
 
     @app.callback(
-        Output("config-modal", "style"),
+        Output("config-panel", "style"),
         Input("toggle-config", "n_clicks"),
         Input("close-config", "n_clicks"),
-        State("config-modal", "style"),
+        State("config-panel", "style"),
         prevent_initial_call=True,
     )
     def _toggle_config(open_n, close_n, style):
         disp = style.get("display", "none")
         trig = callback_context.triggered_id
         if trig == "toggle-config":
-            style["display"] = "flex" if disp == "none" else "none"
+            style["display"] = "block" if disp == "none" else "none"
         else:
             style["display"] = "none"
         return style
