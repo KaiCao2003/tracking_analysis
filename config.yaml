@@ -1,6 +1,6 @@
 # Path to the input CSV (absolute or relative)
 
-input_file: "./data/m07_0829.csv"
+input_file: "./data/m07_0902.csv"
 
 
 # Preprocess settings
@@ -77,6 +77,12 @@ output:
   export_filtered: false
   export_marker_list: false
   export_angular_speed: false
+
+
+  export_head_direction: true
+  head_direction:
+    include_frames: true
+    format: degrees  # degrees or quaternion
   output_dir: "./results"
 
 # Settings for the interactive web application

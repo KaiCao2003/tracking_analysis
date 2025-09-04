@@ -151,3 +151,32 @@ def compute_angular_velocity(rot, times, smoothing=False, window=5, polyorder=2)
     ang_vel = np.deg2rad(dangles) / dt[:, None]
     t_mid = times[:-1] + dt / 2
     return ang_vel, t_mid
+
+def compute_head_direction(rot, *, format="degrees"):
+    """Compute head direction from orientation data.
+
+    Parameters
+    ----------
+    rot : ndarray
+        ``(N,4)`` quaternions ``(x,y,z,w)`` or ``(N,3)`` Euler angles in degrees.
+    format : {'degrees', 'quaternion'}
+        Output representation. ``'degrees'`` returns yaw angles in the range
+        ``[0, 360)``. ``'quaternion'`` returns normalized quaternions.
+    """
+    if rot.size == 0:
+        return np.array([])
+    if rot.shape[1] == 4:
+        if format == "degrees":
+            yaw = R.from_quat(rot).as_euler("xyz", degrees=True)[:, 2]
+            return np.mod(yaw, 360.0)
+        if format == "quaternion":
+            return rot / np.linalg.norm(rot, axis=1)[:, None]
+    else:
+        if format == "degrees":
+            angles = unwrap_deg(rot, axis=0)
+            yaw = angles[:, 2]
+            return np.mod(yaw, 360.0)
+        if format == "quaternion":
+            quat = R.from_euler("xyz", rot, degrees=True).as_quat()
+            return quat / np.linalg.norm(quat, axis=1)[:, None]
+    raise ValueError("format must be 'degrees' or 'quaternion'")

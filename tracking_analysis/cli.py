@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 from datetime import datetime
 import shutil
@@ -22,6 +23,7 @@ from tracking_analysis.kinematics import (
     compute_linear_velocity,
     compute_angular_speed,
     compute_angular_velocity,
+    compute_head_direction,
 )
 from tracking_analysis.plotting import (
     plot_trajectory_2d,
@@ -81,6 +83,13 @@ def main():
             os.makedirs(os.path.dirname(cfg_sum), exist_ok=True)
             shutil.copy(run_summary, cfg_sum)
 
+        if cfg.get('output', 'export_head_direction'):
+            hd_cfg = cfg.get('output', 'head_direction') or {}
+            fmt = hd_cfg.get('format', 'degrees')
+            incl = hd_cfg.get('include_frames', True)
+            with open(run_summary, 'a') as f:
+                f.write(f"Head direction export: format={fmt}, include_frames={incl}\n")
+
         # Continue with the trimmed file inside run directory
         input_path = run_trim
 
@@ -126,6 +135,12 @@ def main():
                 line = ",".join([gid] + info['markers'])
                 f.write(line + "\n")
 
+    hd_enabled = cfg.get('output', 'export_head_direction')
+    hd_cfg = cfg.get('output', 'head_direction') or {}
+    include_frames = hd_cfg.get('include_frames', True)
+    hd_format = hd_cfg.get('format', 'degrees')
+    hd_all = {}
+
     # out_dir already prepared above
 
     for id_ in selected_ids:
@@ -139,6 +154,8 @@ def main():
         else:
             sub   = df.iloc[start:end+1]
             times = times_full[start:end+1]
+
+        frames = np.arange(start + 1, start + 1 + len(times))
 
         # --- extract data for this entity (drops level 0) ---
         ent_df = sub.xs(id_, level=0, axis=1)
@@ -157,6 +174,17 @@ def main():
         rot_block = ent_df.xs('Rotation', level=1, axis=1)
         rot_df    = rot_block.droplevel(0, axis=1)
         quat      = rot_df[['X','Y','Z','W']].values
+
+        if hd_enabled:
+            hd = compute_head_direction(quat, format=hd_format)
+            entry = {}
+            if include_frames:
+                entry['frames'] = frames.tolist()
+            if hd_format == 'degrees':
+                entry['head_direction_deg'] = hd.tolist()
+            else:
+                entry['head_direction_quat'] = hd.tolist()
+            hd_all[id_] = entry
 
         # Kinematics settings
         smoothing    = cfg.get('kinematics','smoothing')
@@ -383,6 +411,10 @@ def main():
                 index=False,
                 float_format="%.8f",
             )
+
+    if hd_enabled and hd_all:
+        with open(os.path.join(out_dir, 'head_direction.json'), 'w') as f:
+            json.dump(hd_all, f, indent=2)
 
 if __name__ == '__main__':
     main()

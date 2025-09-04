@@ -48,6 +48,7 @@ next `after` frames are discarded.
 
 ### `output`
 Controls which figures and exports are produced. `full_size_plots` enlarges plots to 16x10 inches. `x_limit` and `y_limit` specify the axis maxima for time-series plots (set to `null` for automatic scaling).
+Set `export_head_direction` to `true` to write a JSON file with per-frame head direction for the selected groups. The `head_direction.format` option selects between `degrees` (0–360° yaw) and `quaternion` output; `head_direction.include_frames` toggles frame numbers in the JSON.
 
 ### `preprocess`
 If `enable` is true, the CSV is trimmed before analysis. The trimmed and summary
