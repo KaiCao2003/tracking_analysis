@@ -1,9 +1,15 @@
 # Path to the input CSV (absolute or relative)
 
-#input_file: "./data/input.csv"
-input_file: "./data/Take_2025-07-24 04.13.33 PM.csv"
+input_file: "./data/m07_0829.csv"
 
 
+# Preprocess settings
+preprocess:
+  enable: true
+  # optional: also copy the trimmed CSV
+  output_file: null
+  # optional: also copy the summary file
+  summary_file: null
 
 # Time interval in seconds. Use null for end to cover entire file.
 interval:
@@ -73,21 +79,13 @@ output:
   export_angular_speed: false
   output_dir: "./results"
 
-# Preprocess settings
-preprocess:
-  enable: true
-  # optional: also copy the trimmed CSV
-  output_file: null
-  # optional: also copy the summary file
-  summary_file: null
-
 # Settings for the interactive web application
 webapp:
   port: 3010
 
 # Settings for filter comparison utility
 filter_test:
-  enable: true
+  enable: false
   # optional: specify which rigid body to use; defaults to the first one
   group: H1
   # choose data source: angular_speed, position_x, position_y or position_z
