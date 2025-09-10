@@ -1,6 +1,7 @@
 # Path to the input CSV (absolute or relative)
 
-input_file: "./data/m07_0902.csv"
+# input_file: "./data/m07_0902.csv"
+input_file: "/Volumes/SenzaiLab/Kai/#Recording/m07/250909/250909.csv"
 
 
 # Preprocess settings
@@ -38,7 +39,7 @@ kinematics:
 filtering:
   enable: false
 
-  speed_lower: null
+  speed_lower: 500
   speed_upper: null
   angular_speed_lower: null
   angular_speed_upper: null
@@ -61,7 +62,7 @@ no_moving:
 output:
   plot_trajectory_2d: true
   plot_trajectory_3d: false
-  plot_linear_speed: false
+  plot_linear_speed: true
   plot_angular_speed: true
 
   # Plot customization
@@ -78,12 +79,16 @@ output:
   export_marker_list: false
   export_angular_speed: false
 
-
   export_head_direction: true
   head_direction:
     include_frames: true
     format: degrees  # degrees or quaternion
   output_dir: "./results"
+
+# Logging configuration
+logging:
+  level: info
+  file: run.log
 
 # Settings for the interactive web application
 webapp:

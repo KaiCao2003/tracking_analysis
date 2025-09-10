@@ -1,8 +1,8 @@
 import argparse
 import json
 import os
-from datetime import datetime
 import shutil
+import logging
 import numpy as np
 import pandas as pd
 
@@ -30,6 +30,7 @@ from tracking_analysis.plotting import (
     plot_trajectory_3d,
     plot_time_series,
 )
+from tracking_analysis.logging_utils import setup_logging
 
 
 
@@ -50,10 +51,18 @@ def main():
     out_dir = build_run_dir(cfg, base_out)
     os.makedirs(out_dir, exist_ok=True)
 
+    # Configure logging
+    log_cfg = cfg.get('logging') or {}
+    log_level = log_cfg.get('level', 'INFO')
+    log_file = log_cfg.get('file', 'run.log')
+    logger = setup_logging(out_dir, level=log_level, filename=log_file)
+    logger.info("Starting analysis run")
+
     # Save the config used for this run
     with open(args.config, 'r') as f_in, \
             open(os.path.join(out_dir, 'config_used.txt'), 'w') as f_out:
         f_out.write(f_in.read())
+    logger.info("Config loaded from %s", args.config)
 
     # Optionally preprocess the CSV
     input_path = cfg.get('input_file')
@@ -71,7 +80,9 @@ def main():
 
         os.makedirs(os.path.dirname(run_trim), exist_ok=True)
         os.makedirs(os.path.dirname(run_summary), exist_ok=True)
+        logger.info("Preprocessing %s -> %s", input_path, run_trim)
         preprocess_csv(input_path, run_trim, run_summary)
+        logger.info("Summary written to %s", run_summary)
 
         # also write to configured locations when specified
         cfg_trim = pre_cfg.get('output_file')
@@ -79,9 +90,11 @@ def main():
         if cfg_trim and cfg_trim != run_trim:
             os.makedirs(os.path.dirname(cfg_trim), exist_ok=True)
             shutil.copy(run_trim, cfg_trim)
+            logger.info("Copied trimmed CSV to %s", cfg_trim)
         if cfg_sum and cfg_sum != run_summary:
             os.makedirs(os.path.dirname(cfg_sum), exist_ok=True)
             shutil.copy(run_summary, cfg_sum)
+            logger.info("Copied summary to %s", cfg_sum)
 
         if cfg.get('output', 'export_head_direction'):
             hd_cfg = cfg.get('output', 'head_direction') or {}
@@ -89,11 +102,13 @@ def main():
             incl = hd_cfg.get('include_frames', True)
             with open(run_summary, 'a') as f:
                 f.write(f"Head direction export: format={fmt}, include_frames={incl}\n")
+            logger.info("Head direction export enabled: format=%s include_frames=%s", fmt, incl)
 
         # Continue with the trimmed file inside run directory
         input_path = run_trim
 
     # Load data + frame/time columns from the original file
+    logger.info("Loading data from %s", input_path)
     df, frame_col, time_col = load_data(input_path)
 
     # Convert time-based interval to frame indices
@@ -108,6 +123,7 @@ def main():
 
     # Static/missing filtering
     missing = filter_missing(df, start, end)
+    logger.info("Filtered %d missing/static entities", len(missing))
     if cfg.get('output', 'export_filtered'):
         with open(os.path.join(out_dir, 'missing.txt'), 'w') as f:
             f.write('\n'.join(missing))
@@ -118,6 +134,7 @@ def main():
 
     # Drop entities that were deemed missing/static
     selected_ids = [sid for sid in selected_ids if sid not in missing]
+    logger.info("Processing %d entities", len(selected_ids))
 
     # Export the filtered data subset when requested
     if cfg.get('output', 'export_filtered'):
@@ -144,6 +161,7 @@ def main():
     # out_dir already prepared above
 
     for id_ in selected_ids:
+        logger.info("Processing entity %s", id_)
         if id_ not in groups:
             continue
 
@@ -185,6 +203,7 @@ def main():
             else:
                 entry['head_direction_quat'] = hd.tolist()
             hd_all[id_] = entry
+            logger.info("Computed head direction for %s", id_)
 
         # Kinematics settings
         smoothing    = cfg.get('kinematics','smoothing')
@@ -413,8 +432,10 @@ def main():
             )
 
     if hd_enabled and hd_all:
-        with open(os.path.join(out_dir, 'head_direction.json'), 'w') as f:
+        hd_path = os.path.join(out_dir, 'head_direction.json')
+        with open(hd_path, 'w') as f:
             json.dump(hd_all, f, indent=2)
+        logger.info("Head direction data saved to %s", hd_path)
 
 if __name__ == '__main__':
     main()

@@ -17,6 +17,7 @@ This project provides a small pipeline for analyzing motion tracking CSV files. 
 All plots, trimmed files and statistics are written to the directory specified by `output.output_dir` (default `results/`). When trimming is enabled a summary file is produced alongside the trimmed CSV.
 
 Each run creates a subfolder inside `output.output_dir` named with the current date/time and key settings (interval, filter toggles and markers). The same information is appended to the trimmed CSV and summary file names based on the original input file. The exact configuration used is saved as `config_used.txt` within that folder.
+Additionally, a `run.log` file captures progress messages while the same log output is streamed to the console.
 
 ## Configuration Options
 
@@ -55,6 +56,9 @@ If `enable` is true, the CSV is trimmed before analysis. The trimmed and summary
 files are saved inside the run folder with names derived from the input file and
 current settings. `output_file` and `summary_file` are optional paths for writing
 copies of these files; both default to `null`.
+
+### `logging`
+Controls log output. `level` sets verbosity (e.g. `info`, `debug`) and `file` defines the log filename inside each run folder. Logs are also printed to the terminal.
 
 
 You can also run the trimming step manually:
