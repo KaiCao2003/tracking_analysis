@@ -22,6 +22,7 @@ from interactive_app.kinematics import (
     compute_linear_velocity,
     compute_angular_speed,
     compute_angular_velocity,
+    compute_head_direction,
 )
 
 
@@ -66,6 +67,8 @@ def build_table(data: dict, start: float, end: float) -> List[dict]:
 
 def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
     """Load and preprocess the CSV based on ``cfg``."""
+    cfg._cfg.setdefault("head_direction", {})["no_moving_forced"] = True
+    print("Head direction analysis: skipping no-movement periods (1000° placeholder).")
 
     input_file = cfg.get("input_file")
     if not os.path.exists(input_file):
@@ -142,6 +145,18 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             method=method,
         )
         speed_raw = speed.copy()
+
+        nm_cfg = cfg.get("no_moving") or {}
+        nm_window = int(nm_cfg.get("window", 10))
+        nm_after = int(nm_cfg.get("after", 10))
+        head_dir, t_hd = compute_head_direction(
+            rot,
+            frames,
+            times,
+            speed_raw,
+            nm_window=nm_window,
+            nm_after=nm_after,
+        )
 
         if rot is not None:
             ang_speed, t_as = compute_angular_speed(
@@ -260,6 +275,8 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             "frames_ang": frames_ang,
             "ang_vel": ang_vel,
             "t_ang_vel": t_av,
+            "head_dir": head_dir,
+            "t_head_dir": t_hd,
             "markers": markers,
             "speed_filters": speed_filters,
             "ang_speed_filters": ang_filters,

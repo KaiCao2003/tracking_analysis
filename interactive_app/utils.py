@@ -9,6 +9,7 @@ from .kinematics import (
     compute_linear_velocity,
     compute_angular_speed,
     compute_angular_velocity,
+    compute_head_direction,
 )
 from .smoothing import apply as apply_smoothing, register
 
@@ -22,6 +23,7 @@ __all__ = [
     "compute_linear_velocity",
     "compute_angular_speed",
     "compute_angular_velocity",
+    "compute_head_direction",
     "apply_smoothing",
     "register",
 ]
