@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import pandas as pd
 
@@ -13,11 +13,11 @@ from .data_utils import build_table
 
 
 def export_metrics(
-    groups: Dict[str, dict],
+    groups: dict[str, dict],
     out_dir: str | Path = "results",
     fmt: str = "csv",
     metrics: Sequence[str] | None = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Export selected kinematic metrics for each group.
 
     Parameters
@@ -36,7 +36,7 @@ def export_metrics(
 
     Returns
     -------
-    Dict[str, str]
+    dict[str, str]
         Mapping of group identifiers to the written file paths.
     """
     fmt = fmt.lower()
@@ -58,7 +58,7 @@ def export_metrics(
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    paths: Dict[str, str] = {}
+    paths: dict[str, str] = {}
 
     for gid, data in groups.items():
         rows = build_table(data, float(data["times"][0]), float(data["times"][-1]))
@@ -81,7 +81,7 @@ def export_metrics(
     return paths
 
 
-def export_metrics_cfg(groups: Dict[str, dict], cfg: Config) -> Dict[str, str]:
+def export_metrics_cfg(groups: dict[str, dict], cfg: Config) -> dict[str, str]:
     """Export metrics based on configuration options.
 
     Reads ``output.export_metrics`` from ``cfg``. The sub-keys are:
@@ -99,6 +99,5 @@ def export_metrics_cfg(groups: Dict[str, dict], cfg: Config) -> Dict[str, str]:
     fmt: str = exp_cfg.get("format", "csv")
     out_dir: str | Path = cfg.get("output", "output_dir", default="results")
     return export_metrics(groups, out_dir=out_dir, fmt=fmt, metrics=metrics)
-
 
 __all__ = ["export_metrics", "export_metrics_cfg"]

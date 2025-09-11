@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -33,7 +32,7 @@ def slice_range(times: np.ndarray, start: float, end: float) -> slice:
     return slice(i0, i1)
 
 
-def build_table(data: dict, start: float, end: float) -> List[dict]:
+def build_table(data: dict, start: float, end: float) -> list[dict]:
     """Create table rows for the given time range."""
     sl = slice_range(data["times"], start, end)
     times = data["times"][sl]
@@ -59,7 +58,7 @@ def build_table(data: dict, start: float, end: float) -> List[dict]:
     return rows
 
 
-def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
+def prepare_data(cfg: Config) -> tuple[dict[str, dict], list[str]]:
     """Load and preprocess the CSV based on ``cfg``."""
     cfg._cfg.setdefault("head_direction", {})["no_moving_forced"] = True
     print("Head direction analysis: skipping no-movement periods (1000° placeholder).")
@@ -100,7 +99,7 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
 
     filt_cfg = cfg.get("filtering") or {}
 
-    output: Dict[str, dict] = {}
+    output: dict[str, dict] = {}
     for gid in selected:
         if end == float("inf"):
             sub = df.iloc[start:]
@@ -163,10 +162,10 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             ang_vel, t_av = np.zeros((0, 3)), np.array([])
 
         start_frames = start + 1
-        speed_ranges: List[Tuple[int, int]] = []
-        ang_ranges: List[Tuple[int, int]] = []
-        pos_ranges: List[Tuple[int, int]] = []
-        nm_ranges: List[Tuple[int, int]] = []
+        speed_ranges: list[tuple[int, int]] = []
+        ang_ranges: list[tuple[int, int]] = []
+        pos_ranges: list[tuple[int, int]] = []
+        nm_ranges: list[tuple[int, int]] = []
 
         if filt_cfg.get("enable"):
 

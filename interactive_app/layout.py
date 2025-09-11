@@ -1,14 +1,13 @@
 """Application layout for the Dash viewer."""
 from __future__ import annotations
 
-from typing import List
-
 import numpy as np
 from dash import dcc, html, dash_table
 
 from .ui_components import build_config_form
 
-def build_layout(cfg, data, groups: List[str]) -> html.Div:
+
+def build_layout(cfg, data, groups: list[str]) -> html.Div:
     """Return the full application layout."""
     default_gid = groups[0] if groups else None
     times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])

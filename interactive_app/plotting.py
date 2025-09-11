@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 import plotly.graph_objects as go
 
@@ -12,7 +10,7 @@ def make_figures(
     pos: np.ndarray,
     times: np.ndarray,
     frames: np.ndarray,
-    markers: List[int],
+    markers: list[int],
     speed: np.ndarray,
     t_speed: np.ndarray,
     frames_speed: np.ndarray,
@@ -20,7 +18,7 @@ def make_figures(
     t_ang_speed: np.ndarray,
     frames_ang: np.ndarray,
     highlight_time: float | None = None,
-) -> Tuple[go.Figure, go.Figure, go.Figure, go.Figure]:
+) -> tuple[go.Figure, go.Figure, go.Figure, go.Figure]:
     """Create trajectory and speed figures."""
     fig3d = go.Figure()
     fig3d.add_trace(

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -12,7 +10,7 @@ from tracking_analysis.filtering import filter_no_moving
 from .smoothing import apply
 
 
-def _window_speed(pos: np.ndarray, times: np.ndarray, window: int) -> Tuple[np.ndarray, np.ndarray]:
+def _window_speed(pos: np.ndarray, times: np.ndarray, window: int) -> tuple[np.ndarray, np.ndarray]:
     if window % 2 != 0:
         raise ValueError("window must be even for windowed smoothing")
     half = window // 2
@@ -42,7 +40,7 @@ def compute_linear_velocity(
     window: int = 5,
     polyorder: int = 2,
     method: str = "savgol",
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute linear speed from positions with optional smoothing."""
     if smoothing:
         m = method
@@ -65,7 +63,7 @@ def compute_angular_speed(
     window: int = 5,
     polyorder: int = 2,
     method: str = "savgol",
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute angular speed from orientation data."""
     if rot.shape[1] == 3:
         angles = unwrap_deg(rot, axis=0)
@@ -96,7 +94,7 @@ def compute_angular_velocity(
     window: int = 5,
     polyorder: int = 2,
     method: str = "savgol",
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute per-axis angular velocity."""
     if rot.shape[1] == 4:
         angles = R.from_quat(rot).as_euler("xyz", degrees=True)
@@ -120,7 +118,7 @@ def compute_head_direction(
     *,
     nm_window: int = 10,
     nm_after: int = 10,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute head direction (yaw) with forced no-movement skipping.
 
     Parameters
