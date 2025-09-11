@@ -38,7 +38,6 @@ List of rigid-body base names to analyse. An empty list means all available grou
 ### `kinematics`
 Options for smoothing the computed velocities (`smoothing`, `smoothing_window`, `smoothing_polyorder`, `smoothing_method`).
 
-
 ### `filtering`
 Range filters define upper/lower thresholds for linear and angular speed as well as position.
 
@@ -51,6 +50,44 @@ next `after` frames are discarded.
 Controls which figures and exports are produced. `full_size_plots` enlarges plots to 16x10 inches. `x_limit` and `y_limit` specify the axis maxima for time-series plots (set to `null` for automatic scaling).
 Set `export_head_direction` to `true` to write a JSON file with per-frame head direction for the selected groups. The `head_direction.format` option selects between `degrees` (0–360° yaw) and `quaternion` output; `head_direction.include_frames` toggles frame numbers in the JSON.
 
+To write kinematic metrics for each group, enable the `export_metrics` block:
+
+```yaml
+output:
+  export_metrics:
+    enable: true
+    metrics: [trajectory, speed, angular_speed]  # subset is allowed
+    format: csv  # or json
+```
+
+The files are saved under the directory given by `output.output_dir`.
+
+When using the Python API, the same settings can be applied via:
+
+```python
+from interactive_app.exporting import export_metrics_cfg
+paths = export_metrics_cfg(groups, cfg)
+```
+
+To write kinematic metrics for each group, enable the `export_metrics` block:
+
+```yaml
+output:
+  export_metrics:
+    enable: true
+    metrics: [trajectory, speed, angular_speed]  # subset is allowed
+    format: csv  # or json
+```
+
+The files are saved under the directory given by `output.output_dir`.
+
+When using the Python API, the same settings can be applied via:
+
+```python
+from interactive_app.exporting import export_metrics_cfg
+paths = export_metrics_cfg(groups, cfg)
+```
+
 ### `preprocess`
 If `enable` is true, the CSV is trimmed before analysis. The trimmed and summary
 files are saved inside the run folder with names derived from the input file and
@@ -59,7 +96,6 @@ copies of these files; both default to `null`.
 
 ### `logging`
 Controls log output. `level` sets verbosity (e.g. `info`, `debug`) and `file` defines the log filename inside each run folder. Logs are also printed to the terminal.
-
 
 You can also run the trimming step manually:
 
@@ -89,14 +125,14 @@ handling and plotting remain independent:
 `"savgol"`, `"ema"`, `"window"` and `"lateral_inhibition"`. To add a new
 algorithm simply append a function decorated with `@register("my_method")`
 in `smoothing.py`. Set `kinematics.smoothing_method` to the same name in
-`config.yaml` and both `app.py` and `filter_compare.py` will automatically
+`config.yaml` and `app.py` will automatically
 use the new smoother.
 
 ## Interactive Web Application
 
 The Dash-based web interface mirrors the CLI processing pipeline. It reads
 `config.yaml`, applies the same filtering, slicing and smoothing settings and
-highlights any time markers. Controls for selecting an entity, filter and table
+highlights any time markers. Controls for selecting an entity and table
 display sit at the top of the page followed by a global time slider and playback
 buttons. Plots are grouped into tabs: the *Trajectory* tab shows the 3D and 2D
 paths side by side while the *Kinematics* tab contains the speed and angular
@@ -108,49 +144,12 @@ restarting the server.
 `app.py` simply wires together the layout and callback modules, keeping the
 viewer easy to navigate and extend.
 
-
 ```bash
 python -m interactive_app.app --config config.yaml
 ```
 
 The app listens on the port specified by `webapp.port` (default `3010`).
 If `input_file` does not exist the viewer falls back to `data/input.csv`.
-
-
-
-
-## Filter Comparison Utility
-
-The `interactive_app.filter_compare` script loads the CSV defined by
-`input_file`, extracts a one‑dimensional signal and saves SVG plots for the
-configured filters.
-The signal source, time interval and filters are controlled by the
-`filter_test` section in `config.yaml`, for example:
-
-```yaml
-filter_test:
-  enable: true
-  group: null       # use first group
-  source: speed     # or position_x/position_y/position_z
-  start_time: 0
-  end_time: null
-  filters:
-    - type: moving_average
-      window: 5
-    - type: window
-      window: 10
-```
-
-The `window` filter averages the first and last half of the
-configured window.
-
-Run the tool with:
-
-```bash
-python -m interactive_app.filter_compare --config config.yaml
-```
-
-Generated figures are stored under the `results/` directory.
 
 Legacy callbacks for the old YAML editor remain commented out in
 `interactive_app/app.py` for reference. The web interface now exposes a simple

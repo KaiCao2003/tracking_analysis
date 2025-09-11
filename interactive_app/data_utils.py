@@ -15,7 +15,6 @@ from tracking_analysis.filtering import (
     filter_anomalies,
     filter_position,
     apply_ranges,
-    apply_filter_chain,
     filter_no_moving,
 )
 from interactive_app.kinematics import (
@@ -25,11 +24,6 @@ from interactive_app.kinematics import (
     compute_head_direction,
 )
 
-
-def apply_filters(x: np.ndarray, times: np.ndarray, filters: List[dict]) -> Dict[str, np.ndarray]:
-    """Wrapper around :func:`tracking_analysis.filtering.apply_filter_chain`."""
-
-    return apply_filter_chain(x, times, filters)
 
 
 def slice_range(times: np.ndarray, start: float, end: float) -> slice:
@@ -105,7 +99,6 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
     method = kin_cfg.get("smoothing_method", "savgol")
 
     filt_cfg = cfg.get("filtering") or {}
-    filter_defs = cfg.get("filter_test", "filters", default=[]) or []
 
     output: Dict[str, dict] = {}
     for gid in selected:
@@ -251,9 +244,6 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             pos = apply_ranges(pos, start, [(s - 1, e) for s, e in speed_ranges])
             pos = apply_ranges(pos, start, [(s - 1, e) for s, e in ang_ranges])
 
-        speed_filters = apply_filters(speed, t_v, filter_defs)
-        ang_filters = apply_filters(ang_speed, t_as, filter_defs)
-
         markers = []
         for tm in cfg.get("time_markers") or []:
             idx = int(np.searchsorted(times, tm, side="left"))
@@ -278,8 +268,6 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             "head_dir": head_dir,
             "t_head_dir": t_hd,
             "markers": markers,
-            "speed_filters": speed_filters,
-            "ang_speed_filters": ang_filters,
         }
 
     return output, selected

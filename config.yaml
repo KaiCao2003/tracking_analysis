@@ -1,7 +1,7 @@
 # Path to the input CSV (absolute or relative)
 
 # input_file: "./data/m07_0902.csv"
-input_file: "/Volumes/SenzaiLab/Kai/#Recording/m07/250909/250909.csv"
+input_file: "/Volumes/SenzaiLab/Kai/#Recording/m07/250911/250911.csv"
 
 
 # Preprocess settings
@@ -37,9 +37,9 @@ kinematics:
 
 # Filtering thresholds for speed values. Either speed of angular speed
 filtering:
-  enable: false
+  enable: true
 
-  speed_lower: 500
+  speed_lower: 2000
   speed_upper: null
   angular_speed_lower: null
   angular_speed_upper: null
@@ -79,6 +79,11 @@ output:
   export_marker_list: false
   export_angular_speed: false
 
+  export_metrics:
+    enable: false
+    metrics: [ trajectory, speed, angular_speed ]
+    format: csv
+
   export_head_direction: true
   head_direction:
     include_frames: true
@@ -95,31 +100,31 @@ webapp:
   port: 3010
 
 # Settings for filter comparison utility
-filter_test:
-  enable: false
-  # optional: specify which rigid body to use; defaults to the first one
-  group: H1
-  # choose data source: angular_speed, position_x, position_y or position_z
-  source: angular_speed
-  # time range for the test
-  start_time: 55
-  end_time: 65
-
-
-  filters:
-    - type: moving_average
-      window: 5
-    - type: ema
-      alpha: 0.2
-    - type: butterworth
-      order: 2
-      cutoff: 2.0
-    - type: savgol
-      window: 7
-      polyorder: 2
-    - type: window
-      window: 10
-    - type: lateral_inhibition
-      tau_fast: 5
-      tau_slow: 30
-      k_inhibit: 1.0
+#filter_test:
+#  enable: false
+#  # optional: specify which rigid body to use; defaults to the first one
+#  group: H1
+#  # choose data source: angular_speed, position_x, position_y or position_z
+#  source: angular_speed
+#  # time range for the test
+#  start_time: 55
+#  end_time: 65
+#
+#
+#  filters:
+#    - type: moving_average
+#      window: 5
+#    - type: ema
+#      alpha: 0.2
+#    - type: butterworth
+#      order: 2
+#      cutoff: 2.0
+#    - type: savgol
+#      window: 7
+#      polyorder: 2
+#    - type: window
+#      window: 10
+#    - type: lateral_inhibition
+#      tau_fast: 5
+#      tau_slow: 30
+#      k_inhibit: 1.0

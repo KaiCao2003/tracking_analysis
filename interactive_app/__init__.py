@@ -4,6 +4,7 @@ __all__ = [
     "app",
     "callbacks",
     "data_utils",
+    "exporting",
     "layout",
     "plotting",
     "ui_components",

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from .data_utils import apply_filters, prepare_data, slice_range, build_table
+from .data_utils import prepare_data, slice_range, build_table
+from .exporting import export_metrics, export_metrics_cfg
 from .plotting import make_figures
 from .ui_components import build_config_form
 from .kinematics import (
@@ -14,10 +15,11 @@ from .kinematics import (
 from .smoothing import apply as apply_smoothing, register
 
 __all__ = [
-    "apply_filters",
     "prepare_data",
     "slice_range",
     "build_table",
+    "export_metrics",
+    "export_metrics_cfg",
     "make_figures",
     "build_config_form",
     "compute_linear_velocity",

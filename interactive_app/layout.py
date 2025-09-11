@@ -8,7 +8,7 @@ from dash import dcc, html, dash_table
 
 from .ui_components import build_config_form
 
-def build_layout(cfg, data, groups: List[str], filter_names: List[str]) -> html.Div:
+def build_layout(cfg, data, groups: List[str]) -> html.Div:
     """Return the full application layout."""
     default_gid = groups[0] if groups else None
     times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
@@ -25,13 +25,6 @@ def build_layout(cfg, data, groups: List[str], filter_names: List[str]) -> html.
                         options=[{"label": g, "value": g} for g in groups],
                         value=default_gid,
                         id="entity-dropdown",
-                        clearable=False,
-                        style={"minWidth": "200px"},
-                    ),
-                    dcc.Dropdown(
-                        id="filter-dropdown",
-                        options=[{"label": n, "value": n} for n in filter_names],
-                        value="base",
                         clearable=False,
                         style={"minWidth": "200px"},
                     ),
