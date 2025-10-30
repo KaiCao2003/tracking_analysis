@@ -246,12 +246,14 @@ def filter_no_moving(speed, start_frame, window=10, after=10, angular=None):
     if angular is not None:
         ang = np.asarray(angular, dtype=float)
 
-    mask = arr == 0
+    # Use tolerance for floating-point comparison instead of exact equality
+    tolerance = 1e-10
+    mask = np.abs(arr) < tolerance
     if ang is not None:
         if ang.ndim > 1:
-            mask |= np.all(ang == 0, axis=1)
+            mask |= np.all(np.abs(ang) < tolerance, axis=1)
         else:
-            mask |= ang == 0
+            mask |= np.abs(ang) < tolerance
 
     filtered = arr.copy()
     ranges = []

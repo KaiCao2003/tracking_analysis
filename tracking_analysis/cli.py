@@ -297,8 +297,8 @@ def main():
                     filt_cfg.get("z_upper"),
                 )
 
-            ang_spd = apply_ranges(ang_spd, start_frames, speed_ranges)
-            speed = apply_ranges(speed, start_frames, ang_ranges)
+            speed = apply_ranges(speed, start_frames, speed_ranges)
+            ang_spd = apply_ranges(ang_spd, start_frames, ang_ranges)
         else:
             speed_ranges = []
             ang_ranges = []
@@ -319,7 +319,7 @@ def main():
             if nm_ranges:
                 speed = apply_ranges(speed, start_frames, nm_ranges)
                 ang_spd = apply_ranges(ang_spd, start_frames, nm_ranges)
-                nm_pos_ranges = [(s - 1, e) for s, e in nm_ranges]
+                nm_pos_ranges = [(s - 1, e - 1) for s, e in nm_ranges]
                 pos = apply_ranges(pos, start, nm_pos_ranges)
             else:
                 nm_pos_ranges = []
@@ -330,14 +330,15 @@ def main():
 
         if filt_cfg.get('enable'):
             if pos_ranges:
-                rng_conv = [(max(start_frames, s), e + 1) for s, e in pos_ranges]
+                # pos_ranges are already in absolute frame numbers, use them directly
+                rng_conv = pos_ranges
                 speed = apply_ranges(speed, start_frames, rng_conv)
                 ang_spd = apply_ranges(ang_spd, start_frames, rng_conv)
             else:
                 rng_conv = []
 
-            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in speed_ranges])
-            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in ang_ranges])
+            pos = apply_ranges(pos, start, [(s - 1, e - 1) for s, e in speed_ranges])
+            pos = apply_ranges(pos, start, [(s - 1, e - 1) for s, e in ang_ranges])
 
             speed_pos_ranges = [(s - 1, e) for s, e in speed_ranges]
             ang_pos_ranges = [(s - 1, e) for s, e in ang_ranges]
