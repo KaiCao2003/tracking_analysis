@@ -82,7 +82,7 @@ output:
 
   export_metrics:
     enable: true
-    metrics: [ trajectory, speed, angular_speed ]
+    metrics: [trajectory, speed, angular_speed ]
     format: csv
 
   export_head_direction: true
