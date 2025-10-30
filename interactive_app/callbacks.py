@@ -15,7 +15,7 @@ from .plotting import make_figures
 from .ui_components import build_config_form
 
 
-def register_callbacks(app, cfg, data, groups, filter_names) -> None:
+def register_callbacks(app, cfg, data, groups) -> None:
     """Attach all callbacks to *app*."""
 
     @app.callback(
@@ -27,10 +27,9 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
         Output("status-bar", "children"),
         Input("entity-dropdown", "value"),
         Input("time-range", "value"),
-        Input("filter-dropdown", "value"),
         Input("selected-time", "data"),
     )
-    def _update_plots(selected_id, t_range, filt_name, sel_time):
+    def _update_plots(selected_id, t_range, sel_time):
         if not selected_id:
             empty = go.Figure()
             return empty, empty, empty, empty, [], "No data"
@@ -41,9 +40,6 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
         sl_a = slice_range(d["t_ang_speed"], start, end)
         spd = d["speed"]
         ang = d["ang_speed"]
-        if filt_name and filt_name != "base":
-            spd = d["speed_filters"].get(filt_name, spd)
-            ang = d["ang_speed_filters"].get(filt_name, ang)
 
         figs = make_figures(
             d["pos"][sl],
@@ -232,7 +228,6 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
         Output("time-range", "max"),
         Output("time-range", "step"),
         Output("time-range", "value", allow_duplicate=True),
-        Output("filter-dropdown", "options"),
         Output("selected-time", "data", allow_duplicate=True),
         Output("config-form", "children"),
         Output("save-status", "children"),
@@ -244,7 +239,7 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
         prevent_initial_call=True,
     )
     def _save_config(_, values, ids, toggles, tid):
-        nonlocal data, groups, filter_names
+        nonlocal data, groups
         for val, ident in zip(values, ids):
             path = ident["key"].split(".")
             node = cfg._cfg
@@ -278,11 +273,6 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
 
         data, groups = prepare_data(cfg)
         default_gid = groups[0] if groups else None
-        filters_cfg = cfg.get("filter_test", "filters", default=[]) or []
-        filter_names = [
-            "base",
-            *[f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)],
-        ]
         times_ref = data[default_gid]["times"] if default_gid else np.array([0.0, 1.0])
         t_min, t_max = float(times_ref[0]), float(times_ref[-1])
         slider_step = round(max((t_max - t_min) / 50, 0.1), 1)
@@ -293,7 +283,6 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
         with open(path, "w") as f:
             f.write(cfg.as_yaml())
         dropdown_opts = [{"label": g, "value": g} for g in groups]
-        filter_opts = [{"label": n, "value": n} for n in filter_names]
         form = build_config_form(cfg._cfg)
         return (
             dropdown_opts,
@@ -302,7 +291,6 @@ def register_callbacks(app, cfg, data, groups, filter_names) -> None:
             t_max,
             slider_step,
             [t_min, t_max],
-            filter_opts,
             None,
             form,
             f"Saved to {path}",

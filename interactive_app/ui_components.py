@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from dash import dcc, html
 
 
-def build_config_form(cfg_dict: Dict[str, Any], prefix: str = "") -> List[Any]:
+def build_config_form(cfg_dict: dict[str, Any], prefix: str = "") -> list[Any]:
     """Recursively convert a config dictionary into form components."""
-    fields: List[Any] = []
+    fields: list[Any] = []
     for key, value in cfg_dict.items():
         full = f"{prefix}{key}"
         comp_id = {"type": "cfg-input", "key": full}

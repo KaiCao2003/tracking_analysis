@@ -29,6 +29,10 @@ def build_info_suffix(cfg: Config) -> str:
     markers = [m for m in (cfg.get("time_markers") or []) if m is not None]
     if markers:
         parts.append("tm" + "-".join(str(int(m)) for m in markers))
+    if cfg.get("output", "export_head_direction", default=False):
+        fmt = cfg.get("output", "head_direction", "format", default="degrees")
+        code = "deg" if fmt == "degrees" else "quat"
+        parts.append(f"hd{code}")
     return "_".join(slugify(p) for p in parts)
 
 

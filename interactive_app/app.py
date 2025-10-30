@@ -14,14 +14,9 @@ from .callbacks import register_callbacks
 def create_app(cfg: Config) -> Dash:
     """Create Dash application."""
     data, groups = prepare_data(cfg)
-    filters_cfg = cfg.get("filter_test", "filters", default=[]) or []
-    filter_names = [
-        "base",
-        *[f.get("name", f.get("type", f"f{idx}")) for idx, f in enumerate(filters_cfg)],
-    ]
     app = Dash(__name__)
-    app.layout = build_layout(cfg, data, groups, filter_names)
-    register_callbacks(app, cfg, data, groups, filter_names)
+    app.layout = build_layout(cfg, data, groups)
+    register_callbacks(app, cfg, data, groups)
     return app
 
 

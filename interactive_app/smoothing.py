@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Callable, Dict
+from collections.abc import Callable
 import inspect
 import numpy as np
 
-SMOOTHING_FUNCS: Dict[str, Callable[..., np.ndarray]] = {}
+SMOOTHING_FUNCS: dict[str, Callable[..., np.ndarray]] = {}
 
 def register(name: str) -> Callable[[Callable[..., np.ndarray]], Callable[..., np.ndarray]]:
     """Decorator to register a smoothing function."""

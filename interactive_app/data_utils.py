@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -15,20 +14,15 @@ from tracking_analysis.filtering import (
     filter_anomalies,
     filter_position,
     apply_ranges,
-    apply_filter_chain,
     filter_no_moving,
 )
 from interactive_app.kinematics import (
     compute_linear_velocity,
     compute_angular_speed,
     compute_angular_velocity,
+    compute_head_direction,
 )
 
-
-def apply_filters(x: np.ndarray, times: np.ndarray, filters: List[dict]) -> Dict[str, np.ndarray]:
-    """Wrapper around :func:`tracking_analysis.filtering.apply_filter_chain`."""
-
-    return apply_filter_chain(x, times, filters)
 
 
 def slice_range(times: np.ndarray, start: float, end: float) -> slice:
@@ -38,18 +32,26 @@ def slice_range(times: np.ndarray, start: float, end: float) -> slice:
     return slice(i0, i1)
 
 
-def build_table(data: dict, start: float, end: float) -> List[dict]:
+def build_table(data: dict, start: float, end: float) -> list[dict]:
     """Create table rows for the given time range."""
     sl = slice_range(data["times"], start, end)
     times = data["times"][sl]
     frames = data["frames"][sl]
     pos = data["pos"][sl]
-    iv = np.searchsorted(data["t_speed"], times)
-    ia = np.searchsorted(data["t_ang_vel"], times)
     rows = []
     for idx, t in enumerate(times):
-        spd = data["speed"][iv[idx]] if iv[idx] < len(data["speed"]) else float("nan")
-        ang = data["ang_speed"][ia[idx]] if ia[idx] < len(data["ang_speed"]) else float("nan")
+        # Use 'right' side and subtract 1 to get the nearest preceding value
+        # This correctly maps position times to velocity midpoint times
+        iv = np.searchsorted(data["t_speed"], t, side='right') - 1
+        ia = np.searchsorted(data["t_ang_vel"], t, side='right') - 1
+
+        # Clamp to valid indices
+        iv = np.clip(iv, 0, len(data["speed"]) - 1) if len(data["speed"]) > 0 else -1
+        ia = np.clip(ia, 0, len(data["ang_speed"]) - 1) if len(data["ang_speed"]) > 0 else -1
+
+        spd = float(data["speed"][iv]) if iv >= 0 else float("nan")
+        ang = float(data["ang_speed"][ia]) if ia >= 0 else float("nan")
+
         rows.append(
             {
                 "frame": int(frames[idx]),
@@ -57,15 +59,17 @@ def build_table(data: dict, start: float, end: float) -> List[dict]:
                 "x": float(pos[idx, 0]),
                 "y": float(pos[idx, 1]),
                 "z": float(pos[idx, 2]),
-                "speed": float(spd),
-                "angular_speed": float(ang),
+                "speed": spd,
+                "angular_speed": ang,
             }
         )
     return rows
 
 
-def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
+def prepare_data(cfg: Config) -> tuple[dict[str, dict], list[str]]:
     """Load and preprocess the CSV based on ``cfg``."""
+    cfg._cfg.setdefault("head_direction", {})["no_moving_forced"] = True
+    print("Head direction analysis: skipping no-movement periods (1000° placeholder).")
 
     input_file = cfg.get("input_file")
     if not os.path.exists(input_file):
@@ -102,9 +106,8 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
     method = kin_cfg.get("smoothing_method", "savgol")
 
     filt_cfg = cfg.get("filtering") or {}
-    filter_defs = cfg.get("filter_test", "filters", default=[]) or []
 
-    output: Dict[str, dict] = {}
+    output: dict[str, dict] = {}
     for gid in selected:
         if end == float("inf"):
             sub = df.iloc[start:]
@@ -127,11 +130,13 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
 
         rot = None
         if "Rotation" in ent_df.columns.get_level_values(1):
-            rot = (
+            rot_block = (
                 ent_df.xs("Rotation", level=1, axis=1)
-                .droplevel(0, axis=1)[["X", "Y", "Z", "W"]]
-                .values
+                .droplevel(0, axis=1)
             )
+            rot_cols = [c for c in ("X", "Y", "Z", "W") if c in rot_block.columns]
+            if len(rot_cols) >= 3:
+                rot = rot_block[rot_cols].values
 
         speed, t_v = compute_linear_velocity(
             pos,
@@ -142,6 +147,18 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             method=method,
         )
         speed_raw = speed.copy()
+
+        nm_cfg = cfg.get("no_moving") or {}
+        nm_window = int(nm_cfg.get("window", 10))
+        nm_after = int(nm_cfg.get("after", 10))
+        head_dir, t_hd = compute_head_direction(
+            rot,
+            frames,
+            times,
+            speed_raw,
+            nm_window=nm_window,
+            nm_after=nm_after,
+        )
 
         if rot is not None:
             ang_speed, t_as = compute_angular_speed(
@@ -155,10 +172,10 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             ang_vel, t_av = np.zeros((0, 3)), np.array([])
 
         start_frames = start + 1
-        speed_ranges: List[Tuple[int, int]] = []
-        ang_ranges: List[Tuple[int, int]] = []
-        pos_ranges: List[Tuple[int, int]] = []
-        nm_ranges: List[Tuple[int, int]] = []
+        speed_ranges: list[tuple[int, int]] = []
+        ang_ranges: list[tuple[int, int]] = []
+        pos_ranges: list[tuple[int, int]] = []
+        nm_ranges: list[tuple[int, int]] = []
 
         if filt_cfg.get("enable"):
 
@@ -200,8 +217,8 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
                     filt_cfg.get("z_upper"),
                 )
 
-            ang_speed = apply_ranges(ang_speed, start_frames, speed_ranges)
-            speed = apply_ranges(speed, start_frames, ang_ranges)
+            speed = apply_ranges(speed, start_frames, speed_ranges)
+            ang_speed = apply_ranges(ang_speed, start_frames, ang_ranges)
 
         nm_cfg = cfg.get("no_moving") or {}
         if nm_cfg.get("enable"):
@@ -218,7 +235,7 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             if nm_ranges:
                 speed = apply_ranges(speed, start_frames, nm_ranges)
                 ang_speed = apply_ranges(ang_speed, start_frames, nm_ranges)
-                nm_pos_ranges = [(s - 1, e) for s, e in nm_ranges]
+                nm_pos_ranges = [(s - 1, e - 1) for s, e in nm_ranges]
                 pos = apply_ranges(pos, start, nm_pos_ranges)
             else:
                 nm_pos_ranges = []
@@ -229,15 +246,13 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
 
         if filt_cfg.get("enable"):
             if pos_ranges:
-                rng_conv = [(max(start_frames, s), e + 1) for s, e in pos_ranges]
+                # pos_ranges are already in absolute frame numbers, use them directly
+                rng_conv = pos_ranges
                 speed = apply_ranges(speed, start_frames, rng_conv)
                 ang_speed = apply_ranges(ang_speed, start_frames, rng_conv)
 
-            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in speed_ranges])
-            pos = apply_ranges(pos, start, [(s - 1, e) for s, e in ang_ranges])
-
-        speed_filters = apply_filters(speed, t_v, filter_defs)
-        ang_filters = apply_filters(ang_speed, t_as, filter_defs)
+            pos = apply_ranges(pos, start, [(s - 1, e - 1) for s, e in speed_ranges])
+            pos = apply_ranges(pos, start, [(s - 1, e - 1) for s, e in ang_ranges])
 
         markers = []
         for tm in cfg.get("time_markers") or []:
@@ -260,9 +275,9 @@ def prepare_data(cfg: Config) -> Tuple[Dict[str, dict], List[str]]:
             "frames_ang": frames_ang,
             "ang_vel": ang_vel,
             "t_ang_vel": t_av,
+            "head_dir": head_dir,
+            "t_head_dir": t_hd,
             "markers": markers,
-            "speed_filters": speed_filters,
-            "ang_speed_filters": ang_filters,
         }
 
     return output, selected
