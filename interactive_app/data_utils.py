@@ -122,11 +122,13 @@ def prepare_data(cfg: Config) -> tuple[dict[str, dict], list[str]]:
 
         rot = None
         if "Rotation" in ent_df.columns.get_level_values(1):
-            rot = (
+            rot_block = (
                 ent_df.xs("Rotation", level=1, axis=1)
-                .droplevel(0, axis=1)[["X", "Y", "Z", "W"]]
-                .values
+                .droplevel(0, axis=1)
             )
+            rot_cols = [c for c in ("X", "Y", "Z", "W") if c in rot_block.columns]
+            if len(rot_cols) >= 3:
+                rot = rot_block[rot_cols].values
 
         speed, t_v = compute_linear_velocity(
             pos,

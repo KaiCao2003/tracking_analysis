@@ -188,13 +188,26 @@ def main():
         pos_df    = pos_block.droplevel(0, axis=1)
         pos       = pos_df[['X','Y','Z']].values
 
-        # --- Rotation (X,Y,Z,W) extraction ---
+        # --- Rotation extraction (supports XYZ or XYZW) ---
         rot_block = ent_df.xs('Rotation', level=1, axis=1)
         rot_df    = rot_block.droplevel(0, axis=1)
-        quat      = rot_df[['X','Y','Z','W']].values
+        rot_cols  = [c for c in ('X', 'Y', 'Z', 'W') if c in rot_df.columns]
+
+        if len(rot_cols) < 3:
+            logger.warning(
+                "Skipping entity %s: expected at least XYZ rotation columns, found %s",
+                id_, list(rot_df.columns),
+            )
+            continue
+
+        rot = rot_df[rot_cols].values
+        if len(rot_cols) == 3:
+            logger.info("Rotation for %s interpreted as Euler XYZ", id_)
+        else:
+            logger.info("Rotation for %s interpreted as quaternion XYZW", id_)
 
         if hd_enabled:
-            hd = compute_head_direction(quat, format=hd_format)
+            hd = compute_head_direction(rot, format=hd_format)
             entry = {}
             if include_frames:
                 entry['frames'] = frames.tolist()
@@ -232,10 +245,10 @@ def main():
         speed_raw = speed.copy()
 
         ang_spd, t_a = compute_angular_speed(
-            quat, times, smoothing, window, polyorder
+            rot, times, smoothing, window, polyorder
         )
         ang_vel, _ = compute_angular_velocity(
-            quat, times, smoothing, window, polyorder
+            rot, times, smoothing, window, polyorder
         )
 
         start_frames = start + 1
